@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "qwen/qwen3.6-27b",
+        model: "llama-3.3-70b-versatile",
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: "You are an elite medical AI analyst for RoboDoc. Provide highly professional, structured, and concise analysis of medical documents in JSON." },
