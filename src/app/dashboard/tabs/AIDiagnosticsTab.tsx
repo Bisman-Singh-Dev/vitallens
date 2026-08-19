@@ -39,8 +39,6 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
   const lastSpeechTimeRef = useRef(Date.now());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
 
   // Gesture Recognizer State
   const [gestureRecognizer, setGestureRecognizer] = useState<GestureRecognizer | null>(null);
@@ -236,49 +234,6 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      const audioContext = new AudioContextClass();
-      audioContextRef.current = audioContext;
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      let hasSpoken = false;
-      let silenceStart = Date.now();
-
-      const checkSilence = () => {
-        if (!isListeningRef.current) return;
-
-        analyser.getByteFrequencyData(dataArray);
-        const sum = dataArray.reduce((a, b) => a + b, 0);
-        const average = sum / bufferLength;
-
-        // Threshold for speech vs silence
-        if (average > 10) {
-          hasSpoken = true;
-          silenceStart = Date.now(); // reset silence timer
-        } else {
-          // If they have spoken, and it's been silent for 1.5 seconds, auto stop
-          if (hasSpoken && Date.now() - silenceStart > 1500) {
-            stopRecording();
-            return;
-          }
-          // If they haven't spoken for 7 seconds, auto stop
-          if (!hasSpoken && Date.now() - silenceStart > 7000) {
-            stopRecording();
-            return;
-          }
-        }
-
-        animationFrameRef.current = requestAnimationFrame(checkSilence);
-      };
-
-      checkSilence();
-
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
@@ -286,10 +241,6 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
       };
 
       mediaRecorder.onstop = async () => {
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-           audioContextRef.current.close().catch(()=>{});
-        }
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(track => track.stop());
         await processAudio(audioBlob);
@@ -306,10 +257,6 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
   };
 
   const stopRecording = () => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-       audioContextRef.current.close().catch(()=>{});
-    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
