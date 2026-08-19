@@ -39,7 +39,6 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
   const lastSpeechTimeRef = useRef(Date.now());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   // Gesture Recognizer State
   const [gestureRecognizer, setGestureRecognizer] = useState<GestureRecognizer | null>(null);
@@ -277,43 +276,46 @@ export default function AIDiagnosticsTab({ user, setActiveTab, setStartVoiceAlar
     }
   };
 
+  // Manage UI Camera Stream
   useEffect(() => {
-    const setupCamera = async () => {
-      try {
-        if (!cameraStreamRef.current) {
-          cameraStreamRef.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        }
-        
-        const stream = cameraStreamRef.current;
-        
-        if (isCameraActive) {
-          if (backgroundVideoRef.current) backgroundVideoRef.current.srcObject = null;
-          if (videoRef.current) videoRef.current.srcObject = stream;
-          setIsBackgroundCameraActive(false);
-        } else {
-          if (videoRef.current) videoRef.current.srcObject = null;
-          if (backgroundVideoRef.current) {
-            backgroundVideoRef.current.srcObject = stream;
-            setIsBackgroundCameraActive(true);
-          }
-        }
-      } catch (err) {
-        console.error("Camera access denied:", err);
-        setIsCameraActive(false);
-        setIsBackgroundCameraActive(false);
-      }
-    };
-    
-    setupCamera();
+    if (isCameraActive) {
+      startCamera(videoRef);
+    } else {
+      stopCamera(videoRef);
+    }
   }, [isCameraActive]);
 
+  // Manage Background Camera Stream
   useEffect(() => {
-    return () => {
-      if (cameraStreamRef.current) {
-        cameraStreamRef.current.getTracks().forEach(track => track.stop());
+    if (!isCameraActive) {
+      setIsBackgroundCameraActive(true);
+      startCamera(backgroundVideoRef);
+    } else {
+      setIsBackgroundCameraActive(false);
+      stopCamera(backgroundVideoRef);
+    }
+  }, [isCameraActive]);
+
+  const startCamera = async (ref: React.RefObject<HTMLVideoElement | null>) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (ref.current) {
+        ref.current.srcObject = stream;
       }
-    };
-  }, []);
+    } catch (err) {
+      console.error("Camera access denied:", err);
+      setIsCameraActive(false);
+      setIsBackgroundCameraActive(false);
+    }
+  };
+
+  const stopCamera = (ref: React.RefObject<HTMLVideoElement | null>) => {
+    if (ref.current && ref.current.srcObject) {
+      const stream = ref.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      ref.current.srcObject = null;
+    }
+  };
   
   // Keep refs in sync for gesture loop overrides and microphone muting
   useEffect(() => {
