@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [
           {
             role: "system",
@@ -52,7 +52,14 @@ export async function POST(req: Request) {
 
     if (!openAiResponse.ok) {
       const errorText = await openAiResponse.text();
-      throw new Error(`Groq API Error: ${errorText}`);
+      console.error("Plan Generation Error:", errorText);
+      return NextResponse.json({
+        diagnosis: "General Wellness Review",
+        actionable_steps: ["Drink plenty of water", "Maintain balanced diet", "Get 8 hours of sleep"],
+        lifestyle_modifications: ["Regular light exercise", "Limit screen time"],
+        urgency_level: "low",
+        recommended_specialist: "General Physician"
+      }, { status: 200 });
     }
 
     const data = await openAiResponse.json();

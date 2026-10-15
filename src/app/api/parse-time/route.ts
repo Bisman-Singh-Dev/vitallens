@@ -13,46 +13,49 @@ export async function POST(req: Request) {
     If the user says 'at 3 pm', output 15:00.
     If they say something completely unrelated to time, just output '12:00'.`;
 
-    const openAiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: transcript }
-        ],
-        temperature: 0.1,
-        max_tokens: 10
-      })
-    });
+    let parsedTime = "";
+    try {
+      const openAiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: transcript }
+          ],
+          temperature: 0.1,
+          max_completion_tokens: 300
+        })
+      });
 
-    if (!openAiResponse.ok) {
-      throw new Error("Failed to parse time");
+      if (openAiResponse.ok) {
+        const data = await openAiResponse.json();
+        parsedTime = data.choices?.[0]?.message?.content?.trim() || "";
+      }
+    } catch (e) {
+      console.error("Time Parse Fetch Error:", e);
     }
-
-    const data = await openAiResponse.json();
-    const parsedTime = data.choices[0].message.content.trim();
 
     // Basic validation to ensure it's HH:MM
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (timeRegex.test(parsedTime)) {
+    if (parsedTime && timeRegex.test(parsedTime)) {
         return NextResponse.json({ time: parsedTime }, { status: 200 });
     } else {
-        // Fallback to exactly 5 minutes from current time if LLM hallucinates
-        const [hh, mm] = localTime.split(":").map(Number);
+        // Fallback to exactly 5 minutes from current time
+        const [hh, mm] = (localTime || "12:00").split(":").map(Number);
         const d = new Date();
-        d.setHours(hh);
-        d.setMinutes(mm + 5);
+        d.setHours(isNaN(hh) ? 12 : hh);
+        d.setMinutes((isNaN(mm) ? 0 : mm) + 5);
         const fallback = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
         return NextResponse.json({ time: fallback }, { status: 200 });
     }
 
   } catch (error: any) {
     console.error("Time Parse Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to parse time" }, { status: 500 });
+    return NextResponse.json({ time: "12:00" }, { status: 200 });
   }
 }

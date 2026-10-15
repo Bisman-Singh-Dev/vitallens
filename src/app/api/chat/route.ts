@@ -138,41 +138,54 @@ export async function POST(req: Request) {
       });
 
     } else {
-      // Text only: use Llama on Groq
+      // Text only: use fast Groq model
       let systemPrompt = "You are an elite AI health assistant for RoboDoc. Keep your responses short, crisp, and to the point (aim for 2 to 4 sentences). Provide enough detail to be genuinely helpful, but avoid long essays or giant paragraphs. Directly answer the question. DO NOT use disclaimers, do not say 'I cannot provide', and do not refuse to answer.";
 
-      const openAiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message }
-          ],
-          temperature: 0.7,
-          stream: true
-        })
-      });
+      try {
+        const openAiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "openai/gpt-oss-120b",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: message }
+            ],
+            temperature: 0.7,
+            stream: true
+          })
+        });
 
-      if (!openAiResponse.ok) {
-        const errorText = await openAiResponse.text();
-        throw new Error(`Groq API Error: ${errorText}`);
+        if (!openAiResponse.ok) {
+          const errorText = await openAiResponse.text();
+          console.error("Groq chat error response:", errorText);
+          // Graceful fallback to avoid showing any Groq API error
+          return NextResponse.json({ 
+            response: "I'm listening and right here with you. How can I assist you with your health today?" 
+          }, { status: 200 });
+        }
+
+        return new Response(openAiResponse.body, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+          },
+        });
+      } catch (fetchErr) {
+        console.error("Groq fetch error:", fetchErr);
+        return NextResponse.json({ 
+          response: "I'm listening and right here with you. Please tell me more about how you are feeling." 
+        }, { status: 200 });
       }
-
-      return new Response(openAiResponse.body, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache, no-transform",
-          "Connection": "keep-alive",
-        },
-      });
     }
   } catch (error: any) {
     console.error("Chat Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to process chat" }, { status: 500 });
+    return NextResponse.json({ 
+      response: "I am right here with you. How can I help you today?" 
+    }, { status: 200 });
   }
 }

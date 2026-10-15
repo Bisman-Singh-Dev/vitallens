@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Mic } from "lucide-react";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
+import CuteNeonEyes, { EyeState } from "@/components/CuteNeonEyes";
+import { ArrowLeft } from "lucide-react";
 
 export default function HealthManagerTab({ user, setActiveTab }: { user: any, setActiveTab?: (id: string) => void }) {
   const [voiceStep, setVoiceStep] = useState<"idle" | "asking_when" | "asking_what" | "asking_frequency">("idle");
@@ -12,44 +13,66 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
   const alarmDataRef = useRef({ message: "", time: "", frequency: "", timeTranscript: "", messageTranscript: "", frequencyTranscript: "" });
   const isHardwareRecordingRef = useRef(false);
   const recognitionRef = useRef<any>(null);
+  
   const [isListening, setIsListening] = useState(false);
   const isListeningRef = useRef(false);
+  
+  const [isTTSPlaying, setIsTTSPlaying] = useState(false);
   const isTTSPlayingRef = useRef(false);
+  
+  const [isProcessing, setIsProcessing] = useState(false);
   const isProcessingRef = useRef(false);
+  
   const lastSpeechTimeRef = useRef(Date.now());
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   const [gestureRecognizer, setGestureRecognizer] = useState<GestureRecognizer | null>(null);
 
   const speakText = (text: string, onEnd?: () => void) => {
     isTTSPlayingRef.current = true;
+    setIsTTSPlaying(true);
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch(e){}
     }
     
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-       const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
-       utterance.lang = "en-US";
-       utterance.rate = 1.1;
-       
-       // Prevent Chrome garbage collection bug
-       if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
-       (window as any).synthUtterances.push(utterance);
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
+      utterance.lang = "en-US";
+      utterance.rate = 1.1;
+      
+      if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
+      (window as any).synthUtterances.push(utterance);
 
-       utterance.onend = () => {
-          isTTSPlayingRef.current = false;
-          if (onEnd) onEnd();
-          if (recognitionRef.current) { try { recognitionRef.current.start(); } catch(e){} }
-       };
-       utterance.onerror = () => {
-          isTTSPlayingRef.current = false;
-          if (onEnd) onEnd();
-          if (recognitionRef.current) { try { recognitionRef.current.start(); } catch(e){} }
-       };
-       window.speechSynthesis.speak(utterance);
+      let ended = false;
+      const handleEnd = () => {
+        if (ended) return;
+        ended = true;
+        isTTSPlayingRef.current = false;
+        setIsTTSPlaying(false);
+        if (onEnd) onEnd();
+        if (recognitionRef.current) { 
+          try { recognitionRef.current.start(); } catch(e){} 
+        }
+      };
+
+      utterance.onend = handleEnd;
+      utterance.onerror = handleEnd;
+      window.speechSynthesis.speak(utterance);
+
+      const estimatedTimeMs = (text.length * 85) + 2000;
+      setTimeout(() => {
+        if (!ended) {
+          try { window.speechSynthesis.cancel(); } catch(e){}
+          handleEnd();
+        }
+      }, Math.min(estimatedTimeMs, 10000));
     } else {
-       isTTSPlayingRef.current = false;
-       if (onEnd) onEnd();
-       if (recognitionRef.current) { try { recognitionRef.current.start(); } catch(e){} }
+      isTTSPlayingRef.current = false;
+      setIsTTSPlaying(false);
+      if (onEnd) onEnd();
+      if (recognitionRef.current) { 
+        try { recognitionRef.current.start(); } catch(e){} 
+      }
     }
   };
 
@@ -72,13 +95,17 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
   const saveAlarm = async (message: string, time: string, frequency: string) => {
     const days = frequency.includes("week") ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["Everyday"];
     if (user && user.id !== "guest_user") {
-      await addDoc(collection(db, "users", user.id, "reminders"), {
-        text: message,
-        timeOfDay: time,
-        frequency: days.includes("Everyday") ? "daily" : "weekly",
-        active: true,
-        createdAt: new Date().toISOString()
-      });
+      try {
+        await addDoc(collection(db, "users", user.id, "reminders"), {
+          text: message,
+          timeOfDay: time,
+          frequency: days.includes("Everyday") ? "daily" : "weekly",
+          active: true,
+          createdAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Firestore save error:", err);
+      }
     }
     
     const existing = localStorage.getItem("roboDocAlarms");
@@ -95,54 +122,61 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
   };
 
   const advanceVoiceStep = async () => {
-     if (isProcessingRef.current || isTTSPlayingRef.current) return;
-     const currentStep = voiceStepRef.current;
-     
-     if (currentStep === "idle") {
-         if (setActiveTab) setActiveTab("ai-diagnostics");
-         return;
-     }
-     
-     if (currentStep === "asking_when") {
-         isProcessingRef.current = true;
-         if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
-         const parsedTime = await getLlamaTime(alarmDataRef.current.timeTranscript || "5 PM");
-         alarmDataRef.current.time = parsedTime;
-         voiceStepRef.current = "idle";
-         setVoiceStep("idle");
-         
-         speakText("Done! What do you want me to say?", () => {
-            isProcessingRef.current = false;
-            voiceStepRef.current = "asking_what";
-            setVoiceStep("asking_what");
-         });
-     } 
-     else if (currentStep === "asking_what") {
-         isProcessingRef.current = true;
-         if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
-         alarmDataRef.current.message = alarmDataRef.current.messageTranscript || "Time for your medicine";
-         voiceStepRef.current = "idle";
-         setVoiceStep("idle");
-         
-         speakText("Done! Everyday or Everyweek alarm", () => {
-            isProcessingRef.current = false;
-            voiceStepRef.current = "asking_frequency";
-            setVoiceStep("asking_frequency");
-         });
-     }
-     else if (currentStep === "asking_frequency") {
-         isProcessingRef.current = true;
-         if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
-         alarmDataRef.current.frequency = alarmDataRef.current.frequencyTranscript || "Everyday";
-         
-         await saveAlarm(alarmDataRef.current.message, alarmDataRef.current.time, alarmDataRef.current.frequency);
-         
-         voiceStepRef.current = "idle";
-         setVoiceStep("idle");
-         speakText("Done!", () => {
-            isProcessingRef.current = false;
-         });
-     }
+    if (isProcessingRef.current || isTTSPlayingRef.current) return;
+    const currentStep = voiceStepRef.current;
+    
+    if (currentStep === "idle") {
+      if (setActiveTab) setActiveTab("ai-diagnostics");
+      return;
+    }
+    
+    if (currentStep === "asking_when") {
+      isProcessingRef.current = true;
+      setIsProcessing(true);
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
+      const parsedTime = await getLlamaTime(alarmDataRef.current.timeTranscript || "5 PM");
+      alarmDataRef.current.time = parsedTime;
+      voiceStepRef.current = "idle";
+      setVoiceStep("idle");
+      
+      speakText("Done! What do you want me to say?", () => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+        voiceStepRef.current = "asking_what";
+        setVoiceStep("asking_what");
+      });
+    } 
+    else if (currentStep === "asking_what") {
+      isProcessingRef.current = true;
+      setIsProcessing(true);
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
+      alarmDataRef.current.message = alarmDataRef.current.messageTranscript || "Time for your medicine";
+      voiceStepRef.current = "idle";
+      setVoiceStep("idle");
+      
+      speakText("Done! Everyday or Everyweek alarm", () => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+        voiceStepRef.current = "asking_frequency";
+        setVoiceStep("asking_frequency");
+      });
+    }
+    else if (currentStep === "asking_frequency") {
+      isProcessingRef.current = true;
+      setIsProcessing(true);
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
+      alarmDataRef.current.frequency = alarmDataRef.current.frequencyTranscript || "Everyday";
+      
+      await saveAlarm(alarmDataRef.current.message, alarmDataRef.current.time, alarmDataRef.current.frequency);
+      
+      voiceStepRef.current = "idle";
+      setVoiceStep("idle");
+      speakText("Your alarm is scheduled! Returning to diagnostics.", () => {
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+        if (setActiveTab) setActiveTab("ai-diagnostics");
+      });
+    }
   };
 
   // Initialize MediaPipe Gesture Recognizer
@@ -169,12 +203,12 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-         if (backgroundVideoRef.current) {
+        .then((stream) => {
+          if (backgroundVideoRef.current) {
             backgroundVideoRef.current.srcObject = stream;
-         }
-      })
-      .catch(console.error);
+          }
+        })
+        .catch(console.error);
     }
   }, []);
 
@@ -224,24 +258,24 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
         recognitionRef.current.lang = "en-US";
         
         recognitionRef.current.onstart = () => {
-           isHardwareRecordingRef.current = true;
-           setIsListening(true);
-           isListeningRef.current = true;
-           lastSpeechTimeRef.current = Date.now();
+          isHardwareRecordingRef.current = true;
+          setIsListening(true);
+          isListeningRef.current = true;
+          lastSpeechTimeRef.current = Date.now();
         };
         recognitionRef.current.onend = () => {
-           isHardwareRecordingRef.current = false;
-           setIsListening(false);
-           isListeningRef.current = false;
-           if (recognitionRef.current && !isTTSPlayingRef.current) {
-              try { recognitionRef.current.start(); } catch(e){}
-           }
+          isHardwareRecordingRef.current = false;
+          setIsListening(false);
+          isListeningRef.current = false;
+          if (recognitionRef.current && !isTTSPlayingRef.current) {
+            try { recognitionRef.current.start(); } catch(e){}
+          }
         };
         
-        recognitionRef.current.onerror = (event: any) => {
-           isHardwareRecordingRef.current = false;
-           setIsListening(false);
-           isListeningRef.current = false;
+        recognitionRef.current.onerror = () => {
+          isHardwareRecordingRef.current = false;
+          setIsListening(false);
+          isListeningRef.current = false;
         };
         
         recognitionRef.current.onresult = async (event: any) => {
@@ -250,30 +284,32 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
           lastSpeechTimeRef.current = Date.now();
           const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
           
-          if (transcript.includes("return to helper mode") || transcript.includes("helper mode") || transcript.includes("help mode") || transcript.includes("go back")) {
-             if (setActiveTab) setActiveTab("ai-diagnostics");
-             return;
+          if (transcript.includes("return to helper mode") || transcript.includes("helper mode") || transcript.includes("help mode") || transcript.includes("go back") || transcript.includes("diagnostics")) {
+            if (setActiveTab) setActiveTab("ai-diagnostics");
+            return;
           }
           
           if (voiceStepRef.current === "idle") {
-             if (transcript.includes("set alarm") || transcript.includes("set an alarm") || transcript.includes("add alarm") || transcript.includes("add reminder")) {
-                isProcessingRef.current = true;
-                if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
-                speakText("When do you want me to set the alarm?", () => {
-                   isProcessingRef.current = false;
-                   voiceStepRef.current = "asking_when";
-                   setVoiceStep("asking_when");
-                });
-             }
-             return;
+            if (transcript.includes("set alarm") || transcript.includes("set an alarm") || transcript.includes("add alarm") || transcript.includes("add reminder")) {
+              isProcessingRef.current = true;
+              setIsProcessing(true);
+              if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch(e){} }
+              speakText("When do you want me to set the alarm?", () => {
+                isProcessingRef.current = false;
+                setIsProcessing(false);
+                voiceStepRef.current = "asking_when";
+                setVoiceStep("asking_when");
+              });
+            }
+            return;
           }
           
           if (voiceStepRef.current === "asking_when") {
-             alarmDataRef.current.timeTranscript = transcript;
+            alarmDataRef.current.timeTranscript = transcript;
           } else if (voiceStepRef.current === "asking_what") {
-             alarmDataRef.current.messageTranscript = transcript;
+            alarmDataRef.current.messageTranscript = transcript;
           } else if (voiceStepRef.current === "asking_frequency") {
-             alarmDataRef.current.frequencyTranscript = transcript;
+            alarmDataRef.current.frequencyTranscript = transcript;
           }
         };
       }
@@ -283,10 +319,10 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
       const now = Date.now();
       if (recognitionRef.current && !isTTSPlayingRef.current && !isProcessingRef.current) {
         if (!isHardwareRecordingRef.current) {
-           try { recognitionRef.current.start(); } catch (e) {}
+          try { recognitionRef.current.start(); } catch (e) {}
         } else if (now - lastSpeechTimeRef.current > 8000) {
-           try { recognitionRef.current.stop(); } catch(e){}
-           lastSpeechTimeRef.current = now;
+          try { recognitionRef.current.stop(); } catch(e){}
+          lastSpeechTimeRef.current = now;
         }
       }
     }, 2000);
@@ -295,56 +331,79 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
       clearInterval(watchdog);
       isListeningRef.current = false;
       if (recognitionRef.current) {
-         recognitionRef.current.onend = null;
-         recognitionRef.current.onresult = null;
-         recognitionRef.current.onerror = null;
-         try { recognitionRef.current.stop(); } catch(e){}
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        try { recognitionRef.current.stop(); } catch(e){}
       }
     };
   }, [user]);
 
   // Boot sequence auto-start
   useEffect(() => {
-     speakText("When do you want me to set the alarm?", () => {
-         voiceStepRef.current = "asking_when";
-         setVoiceStep("asking_when");
-     });
+    speakText("When do you want me to set the alarm?", () => {
+      voiceStepRef.current = "asking_when";
+      setVoiceStep("asking_when");
+    });
   }, []);
 
+  // Determine eye state for Health Manager
+  const eyeState: EyeState = isTTSPlaying
+    ? "speaking"
+    : isProcessing
+    ? "thinking"
+    : isListening
+    ? "listening"
+    : "awake";
+
+  const statusSubtitle = voiceStep === "asking_when" 
+    ? (alarmDataRef.current.timeTranscript ? `Time: "${alarmDataRef.current.timeTranscript}" • Show 👍 to confirm` : "Say when to set the alarm, then show 👍")
+    : voiceStep === "asking_what"
+    ? (alarmDataRef.current.messageTranscript ? `Message: "${alarmDataRef.current.messageTranscript}" • Show 👍 to confirm` : "What should I remind you about? Show 👍 to confirm")
+    : voiceStep === "asking_frequency"
+    ? (alarmDataRef.current.frequencyTranscript ? `Frequency: "${alarmDataRef.current.frequencyTranscript}" • Show 👍 to confirm` : "Everyday or weekly? Show 👍 to confirm")
+    : isProcessing
+    ? "Processing alarm schedule..."
+    : "Health Manager Active";
+
   return (
-    <div className="flex-1 min-h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="flex-1 min-h-screen bg-[#070709] flex flex-col items-center justify-center relative overflow-hidden select-none">
       
       {/* Invisible video element for gesture tracking (Must not use display: none) */}
       <video ref={backgroundVideoRef} className="absolute opacity-0 w-[1px] h-[1px] pointer-events-none" autoPlay playsInline muted />
       
-      {/* Background ambient glow */}
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-900/20 to-black pointer-events-none"></div>
+      {/* Background ambient neon gray glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(226,232,240,0.06)_0%,rgba(7,7,9,1)_70%)] pointer-events-none z-0" />
       
-      {/* Pulsing Orb UI */}
-      <div className="relative z-10 flex flex-col items-center justify-center">
-        <div className="relative w-64 h-64 flex items-center justify-center">
-          {/* Outer glow rings */}
-          <div className={`absolute inset-0 rounded-full border border-brand-500/30 transition-all duration-700 ease-in-out ${isListening ? 'scale-125 opacity-0 animate-ping' : 'scale-100 opacity-50'}`}></div>
-          <div className={`absolute inset-4 rounded-full border border-brand-400/50 transition-all duration-500 ease-in-out ${isListening ? 'scale-110 opacity-30 animate-pulse' : 'scale-100 opacity-50'}`}></div>
-          
-          {/* Core Orb */}
-          <div className={`relative w-48 h-48 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ease-in-out shadow-[0_0_50px_rgba(255,51,102,0.3)] ${isListening ? 'bg-gradient-to-tr from-brand-600 to-neon-red shadow-[0_0_80px_rgba(255,51,102,0.6)]' : 'bg-gradient-to-tr from-brand-900 to-brand-700'}`}>
-             <Mic className={`w-16 h-16 ${isListening ? 'text-white' : 'text-brand-300'}`} />
-          </div>
-        </div>
-        
-        {/* Status Text */}
-        <div className="mt-12 text-center">
-          <h2 className="text-3xl font-light tracking-wider text-white mb-2">
-            {voiceStep === "asking_when" ? "Awaiting Time" : 
-             voiceStep === "asking_what" ? "Awaiting Message" :
-             voiceStep === "asking_frequency" ? "Awaiting Frequency" :
-             isListening ? "Listening..." : "Health Manager Active"}
-          </h2>
-          <p className="text-brand-300 text-sm opacity-60">Say your answer, then show a 👍 to confirm</p>
-          <p className="text-brand-300 text-sm opacity-60 mt-1">Say "Return to helper mode" to exit</p>
-        </div>
+      {/* Header with back button */}
+      <div className="w-full max-w-4xl flex justify-between items-center z-20 px-4 sm:px-8 pt-8">
+        <button 
+          onClick={() => setActiveTab && setActiveTab("ai-diagnostics")}
+          className="flex items-center gap-2 text-slate-400 hover:text-white px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-700/50 transition-all text-xs tracking-wider uppercase font-semibold"
+        >
+          <ArrowLeft className="w-4 h-4" /> Return to Diagnostics
+        </button>
+
+        <span className="text-xs uppercase tracking-widest font-semibold text-slate-400">
+          Alarm Scheduler
+        </span>
       </div>
+
+      {/* Centerpiece: Cute Neon Eyes */}
+      <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl relative z-10">
+        <CuteNeonEyes 
+          state={eyeState}
+          statusText={statusSubtitle}
+        />
+      </div>
+
+      {/* Footer tips */}
+      <div className="text-center pb-6 z-20">
+        <p className="text-xs tracking-widest text-slate-500 uppercase">
+          Say your answer, then show 👍 to confirm • Say "Go back" to return
+        </p>
+      </div>
+
     </div>
   );
 }

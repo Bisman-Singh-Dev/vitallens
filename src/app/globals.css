@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-brand-100: #FFE5E5;
-  --color-brand-300: #FF6B6B;
-  --color-brand-500: #C81E3A;
-  --color-brand-700: #7A0C0C;
-  --color-brand-900: #3D0606;
+  --color-brand-100: #f1f5f9;
+  --color-brand-300: #cbd5e1;
+  --color-brand-500: #94a3b8;
+  --color-brand-700: #475569;
+  --color-brand-900: #1e293b;
 
-  --color-neutral-dark: #1A1A1D;
-  --color-background: #0a0a0a;
-  --color-foreground: #FAFAFA;
+  --color-neutral-dark: #121215;
+  --color-background: #070709;
+  --color-foreground: #f8fafc;
   
-  --color-neon-red: #FF3366;
-  --color-neon-red-glow: rgba(255, 51, 102, 0.6);
+  /* Neon Gray Theme */
+  --color-neon-gray: #e2e8f0;
+  --color-neon-gray-bright: #ffffff;
+  --color-neon-gray-dim: #94a3b8;
+  --color-neon-gray-glow: rgba(226, 232, 240, 0.55);
+
+  /* Remap any legacy neon-red tags to neon gray */
+  --color-neon-red: #e2e8f0;
+  --color-neon-red-glow: rgba(226, 232, 240, 0.5);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #FAFAFA;
+  --background: #070709;
+  --foreground: #f8fafc;
+  --neon-gray: #e2e8f0;
+  --neon-gray-glow: 0 0 20px rgba(226, 232, 240, 0.5), 0 0 45px rgba(148, 163, 184, 0.3);
 }
 
 body {
@@ -28,15 +37,31 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
   @apply antialiased h-full;
+  overflow-x: hidden;
 }
 
+/* Neon Gray Gradients & Effects */
 .brand-gradient {
-  background: linear-gradient(135deg, var(--color-brand-700) 0%, var(--color-brand-500) 50%, var(--color-brand-300) 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #94a3b8 100%);
 }
 
 .brand-gradient-text {
-  background: linear-gradient(135deg, var(--color-brand-700) 0%, var(--color-brand-500) 50%, var(--color-brand-300) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.neon-gray-glow {
+  box-shadow: 0 0 20px rgba(226, 232, 240, 0.4), 0 0 40px rgba(148, 163, 184, 0.2);
+}
+
+.neon-gray-border {
+  border-color: rgba(226, 232, 240, 0.3);
+}
+
+.neon-gray-card {
+  background: rgba(18, 18, 22, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.15);
+  backdrop-filter: blur(16px);
 }
