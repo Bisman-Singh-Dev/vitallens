@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RoboDoc - AI Health & Disease Insight Platform",
-  description: "AI-powered eye photo wellness checks, personalized plans, and habit tracking.",
+  description: "AI-powered diagnostic scans, personalized clinical plans, and habit tracking.",
 };
 
 export default function RootLayout({

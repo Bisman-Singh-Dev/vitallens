@@ -283,7 +283,7 @@ export default function DashboardPage() {
             )}
             {activeTab === "diseases" && (
               <div className="max-w-4xl mx-auto p-6 md:p-10">
-                <DiseasesTab user={user} latestScan={latestScan} />
+                <DiseasesTab user={user} latestScan={latestScan} setActiveTab={setActiveTab} />
               </div>
             )}
             {activeTab === "profile" && (

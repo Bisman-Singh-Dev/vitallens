@@ -140,11 +140,16 @@ export default function AIDiagnosticsTab({
     setIsCameraActive(true);
   };
 
-  // Triggers emergency procedure: opens camera, speaks emergency alert, then launches First-Aid video
+  // Triggers emergency procedure: opens camera, speaks emergency alert, and immediately launches First-Aid video on the same window
   const triggerEmergencyFlow = (emergencyType: string = "general") => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsAwake(true);
+    isAwakeRef.current = true;
     isCameraActiveRef.current = true;
     setIsCameraActive(true);
-    setInput("Emergency scan activated.");
+    setInput("Emergency protocol activated.");
 
     // Select suitable first-aid emergency video
     let targetVideo = "https://www.youtube.com/embed/AhANvBB9hz0?autoplay=1"; // Cuts / general first aid
@@ -156,16 +161,18 @@ export default function AIDiagnosticsTab({
       targetVideo = "https://www.youtube.com/embed/TsJ49Np3HS0?autoplay=1";
     }
 
-    playDirectTTS("Emergency mode activated. Opening camera to assess the situation and loading first aid guidance.", () => {
-      setEmergencyVideoUrl(targetVideo);
-    });
+    // Immediately open emergency video on this window without waiting for TTS or reloading
+    setEmergencyVideoUrl(targetVideo);
+    emergencyVideoUrlRef.current = targetVideo;
+
+    playDirectTTS("Emergency mode activated. Opening camera assessment and live first aid guidance.");
   };
 
   const processTranscript = (transcript: string) => {
     const lower = transcript.toLowerCase();
     const clean = lower.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-    // 1. EMERGENCY COMMAND (Priority #1: works at any time, even dormant)
+    // 1. EMERGENCY COMMAND (Priority #1: works at any time, even when camera is active or dormant)
     if (
       clean.includes("emergency") || 
       clean.includes("help me") || 
@@ -175,6 +182,28 @@ export default function AIDiagnosticsTab({
       clean.includes("bleeding")
     ) {
       triggerEmergencyFlow(clean);
+      return;
+    }
+
+    // Close emergency command
+    if (clean.includes("close emergency") || clean.includes("stop emergency") || clean.includes("exit emergency")) {
+      setEmergencyVideoUrl("");
+      emergencyVideoUrlRef.current = "";
+      playDirectTTS("Emergency protocol closed.");
+      return;
+    }
+
+    // Close camera command
+    if (clean.includes("close camera") || clean.includes("exit camera") || clean.includes("stop camera") || clean.includes("cancel camera")) {
+      setIsCameraActive(false);
+      isCameraActiveRef.current = false;
+      playDirectTTS("Camera closed.");
+      return;
+    }
+
+    // Snap photo command while camera is active
+    if (isCameraActiveRef.current && (clean.includes("take photo") || clean.includes("snap photo") || clean.includes("capture photo") || clean.includes("take picture") || clean.includes("click photo"))) {
+      captureImageAndSend();
       return;
     }
 
@@ -641,10 +670,16 @@ export default function AIDiagnosticsTab({
               <span className="font-bold text-white uppercase tracking-wider text-sm">Emergency First Aid Protocol</span>
             </div>
             <button 
-              onClick={() => { setEmergencyVideoUrl(""); }} 
-              className="bg-red-950/80 hover:bg-neon-red text-white border border-red-500/60 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(255,51,102,0.3)]"
+              onClick={() => {
+                setEmergencyVideoUrl("");
+                emergencyVideoUrlRef.current = "";
+                if (typeof window !== "undefined" && window.speechSynthesis) {
+                  window.speechSynthesis.cancel();
+                }
+              }} 
+              className="bg-red-950/80 hover:bg-neon-red text-white border border-red-500/60 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(255,51,102,0.3)] text-xs sm:text-sm"
             >
-              <X className="w-5 h-5" /> Close Emergency Video
+              <X className="w-4 h-4" /> Close Emergency Video
             </button>
           </div>
           <iframe 
@@ -692,17 +727,25 @@ export default function AIDiagnosticsTab({
                 muted
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent flex flex-col items-center justify-end pb-6 gap-3">
-                <p className="text-white font-medium text-base flex items-center gap-2 drop-shadow-[0_0_10px_rgba(255,51,102,0.8)]">
-                  <ThumbsUp className="w-6 h-6 text-neon-red animate-pulse" /> 
-                  Show Thumbs Up or click capture
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col items-center justify-end pb-6 gap-3">
+                <p className="text-white font-medium text-xs sm:text-sm flex items-center gap-2 drop-shadow-[0_0_10px_rgba(255,51,102,0.8)]">
+                  <ThumbsUp className="w-5 h-5 text-neon-red animate-pulse" /> 
+                  Show Thumbs Up to capture • or say "Emergency"
                 </p>
-                <button
-                  onClick={captureImageAndSend}
-                  className="px-6 py-2.5 rounded-full bg-neon-red text-white font-bold text-sm hover:bg-neon-red-bright shadow-[0_0_25px_rgba(255,51,102,0.7)] transition-all flex items-center gap-2"
-                >
-                  <Camera className="w-4 h-4" /> Snap Photo Now
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={captureImageAndSend}
+                    className="px-5 py-2.5 rounded-full bg-neon-red text-white font-bold text-xs sm:text-sm hover:bg-neon-red-bright shadow-[0_0_25px_rgba(255,51,102,0.7)] transition-all flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" /> Snap Photo Now
+                  </button>
+                  <button
+                    onClick={() => triggerEmergencyFlow("general")}
+                    className="px-5 py-2.5 rounded-full bg-red-950/90 border border-red-500/80 hover:bg-neon-red text-white font-bold text-xs sm:text-sm shadow-[0_0_25px_rgba(255,0,0,0.6)] transition-all flex items-center gap-2"
+                  >
+                    <ShieldAlert className="w-4 h-4 text-neon-red animate-pulse" /> Emergency
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

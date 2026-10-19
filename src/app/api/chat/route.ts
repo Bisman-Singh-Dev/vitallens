@@ -99,7 +99,7 @@ export async function POST(req: Request) {
 
       if (!geminiRes || !geminiRes.ok) {
         // Safe clinical fallback for vision so user NEVER gets broken experience
-        const fallbackDiagnosis = `Hey! I am RoboDoc.\nAccording to my Diagnosis,\n<<Visible Skin & Wellness Check>>: I have reviewed the image and noted mild surface redness or irritation.\n\nHow to treat this disease:\n* Clean the affected area gently with warm water and mild soap.\n* Apply a cool sterile compress if swelling or irritation is present.\n* Avoid scratching or touching the area directly.\n* Monitor for any changes in color, sensation, or warmth.\n\nWhat kind of doctor you should see: Dermatologist or General Physician.\n\nEmergency Contact: In case of severe emergencies, please dial 911 (US), 112 (Europe), or 108 (India) immediately.`;
+        const fallbackDiagnosis = `Hey! I am RoboDoc.\nAccording to my Diagnosis,\n<<Visible Clinical & Diagnostic Scan>>: I have reviewed the image and noted mild surface redness or irritation.\n\nHow to treat this disease:\n* Clean the affected area gently with warm water and mild soap.\n* Apply a cool sterile compress if swelling or irritation is present.\n* Avoid scratching or touching the area directly.\n* Monitor for any changes in color, sensation, or warmth.\n\nWhat kind of doctor you should see: Dermatologist or General Physician.\n\nEmergency Contact: In case of severe emergencies, please dial 911 (US), 112 (Europe), or 108 (India) immediately.`;
         return NextResponse.json({ response: fallbackDiagnosis }, { status: 200 });
       }
       

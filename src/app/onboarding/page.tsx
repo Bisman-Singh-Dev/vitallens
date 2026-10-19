@@ -46,7 +46,7 @@ export default function OnboardingPage() {
       }
     } catch (err) {
       console.error("Camera access denied", err);
-      setError("Camera access is required for the wellness check.");
+      setError("Camera access is required for diagnostic scanning.");
     }
   };
 

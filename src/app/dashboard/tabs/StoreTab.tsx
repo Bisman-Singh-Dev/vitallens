@@ -40,7 +40,7 @@ export default function StoreTab() {
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-white">Wearables Store</h2>
-        <p className="text-sm text-gray-400 mt-1">Upgrade your wellness tracking with dedicated hardware</p>
+        <p className="text-sm text-gray-400 mt-1">Upgrade your diagnostic tracking with dedicated hardware</p>
       </div>
 
       <div className="bg-neutral-900 rounded-3xl border border-neon-red/30 shadow-[0_0_15px_rgba(255,51,102,0.1)] overflow-hidden flex flex-col md:flex-row">
@@ -69,7 +69,7 @@ export default function StoreTab() {
           <p className="text-2xl text-gray-400 font-light mb-6">$129.00</p>
           
           <p className="text-gray-300 mb-8 leading-relaxed">
-            Continuous health monitoring right from your wrist. Syncs directly to your RoboDoc dashboard over WiFi, providing real-time insights to complement your eye-based wellness checks.
+            Continuous health monitoring right from your wrist. Syncs directly to your RoboDoc dashboard over WiFi, providing real-time insights to complement your eye-based diagnostic scans.
           </p>
 
           <ul className="space-y-4 mb-10">

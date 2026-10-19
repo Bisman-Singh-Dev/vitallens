@@ -64,6 +64,26 @@ export default function LoginPage() {
       return;
     }
 
+    // Check stored account info and linked password
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("vitallens_active_user");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const emailMatch = parsed.email && parsed.email.toLowerCase() === lowerEmail;
+          const nameMatch = parsed.displayName && parsed.displayName.toLowerCase() === lowerEmail.split("@")[0];
+          if ((emailMatch || nameMatch) && parsed.password && parsed.password === password) {
+            localStorage.setItem("vitallens_active_user", JSON.stringify({
+              ...parsed,
+              isLoggedIn: true
+            }));
+            router.push("/dashboard");
+            return;
+          }
+        } catch (e) {}
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -311,7 +331,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-[11px] text-slate-600 text-center leading-relaxed">
-          RoboDoc is an AI wellness assistant and diagnostic viewer. By logging in, you agree to our standard terms and clinical safety protocols.
+          RoboDoc is an AI clinical diagnostic assistant. By logging in, you agree to our standard terms and clinical safety protocols.
         </p>
       </motion.div>
     </main>

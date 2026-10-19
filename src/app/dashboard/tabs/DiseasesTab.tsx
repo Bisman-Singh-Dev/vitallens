@@ -5,7 +5,7 @@ import { AlertCircle, ChevronRight, Activity, CalendarClock } from "lucide-react
 import Link from "next/link";
 import { useState } from "react";
 
-export default function DiseasesTab({ user, latestScan }: { user: any, latestScan: any }) {
+export default function DiseasesTab({ user, latestScan, setActiveTab }: { user: any, latestScan: any, setActiveTab?: (tab: string) => void }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   if (!latestScan) {
@@ -16,11 +16,14 @@ export default function DiseasesTab({ user, latestScan }: { user: any, latestSca
         </div>
         <h2 className="text-2xl font-bold text-white mb-3">No Scan Data Found</h2>
         <p className="text-gray-400 max-w-md mb-8">
-          You haven't completed your first wellness check yet. Take a quick photo of your eye to get started.
+          You haven't completed your first diagnostic scan yet. Use the RoboDoc camera to analyze symptoms.
         </p>
-        <Link href="/onboarding" className="px-6 py-3 bg-neon-red/20 text-neon-red border border-neon-red hover:bg-neon-red/30 font-medium rounded-xl shadow-[0_0_15px_rgba(255,51,102,0.3)] transition-all">
-          Start Wellness Check
-        </Link>
+        <button 
+          onClick={() => setActiveTab ? setActiveTab("ai-diagnostics") : window.location.href = "/dashboard"} 
+          className="px-6 py-3 bg-neon-red text-white hover:bg-neon-red-bright font-bold rounded-xl shadow-[0_0_20px_rgba(255,51,102,0.4)] transition-all"
+        >
+          Start Diagnostic Scan
+        </button>
       </div>
     );
   }
@@ -36,22 +39,25 @@ export default function DiseasesTab({ user, latestScan }: { user: any, latestSca
         <div>
           <h4 className="font-semibold text-red-400 mb-1">Medical Disclaimer</h4>
           <p className="text-sm text-red-300/80 leading-relaxed">
-            {disclaimer || "This is an AI-generated wellness estimate, not a medical diagnosis. Consult a licensed physician or ophthalmologist for any health concern."}
+            {disclaimer || "This is an AI-generated diagnostic estimate, not an in-person hospital diagnosis. Consult a licensed physician for any urgent concern."}
           </p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Wellness Insights</h2>
+          <h2 className="text-2xl font-bold text-white">Diagnostic Insights</h2>
           <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
             <CalendarClock className="w-4 h-4" />
             Last checked: {scanDate}
           </div>
         </div>
-        <Link href="/onboarding" className="px-4 py-2 bg-neutral-900 border border-neon-red/50 text-neon-red font-medium rounded-lg hover:bg-neon-red/10 transition-colors shadow-[0_0_10px_rgba(255,51,102,0.2)] text-sm">
+        <button 
+          onClick={() => setActiveTab ? setActiveTab("ai-diagnostics") : window.location.href = "/dashboard"} 
+          className="px-4 py-2 bg-neutral-900 border border-neon-red/50 text-neon-red font-medium rounded-lg hover:bg-neon-red/10 transition-colors shadow-[0_0_10px_rgba(255,51,102,0.2)] text-sm"
+        >
           Re-Scan
-        </Link>
+        </button>
       </div>
 
       {/* Flagged Conditions Grid */}
