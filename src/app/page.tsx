@@ -52,11 +52,20 @@ export default function LandingPage() {
           >
             <Link href="/dashboard">
               <motion.button 
-                whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(255, 51, 102, 0.6)" }}
+                whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(226, 232, 240, 0.4)" }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-neon-red text-white font-bold uppercase tracking-widest rounded-md shadow-[0_0_20px_rgba(255,51,102,0.4)] flex items-center gap-2 w-full justify-center transition-all"
+                className="px-8 py-4 bg-white text-black font-bold uppercase tracking-widest rounded-xl shadow-[0_0_20px_rgba(226,232,240,0.3)] flex items-center gap-2 w-full justify-center transition-all"
               >
                 Go to Dashboard <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </Link>
+            <Link href="/login">
+              <motion.button 
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-black/60 border border-slate-600 text-white font-bold uppercase tracking-widest rounded-xl shadow-[0_0_15px_rgba(226,232,240,0.1)] flex items-center gap-2 w-full justify-center transition-all"
+              >
+                Sign In / Login
               </motion.button>
             </Link>
           </motion.div>

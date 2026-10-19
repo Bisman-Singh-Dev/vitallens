@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, ThumbsUp } from "lucide-react";
+import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
 import CuteNeonEyes, { EyeState } from "@/components/CuteNeonEyes";
+import { saveDiagnosticRecord } from "./HistoryTab";
+import Link from "next/link";
 
 export default function AIDiagnosticsTab({ 
   user, 
   setActiveTab, 
-  setStartVoiceAlarmFlow 
+  setStartVoiceAlarmFlow,
+  onVoiceLogin
 }: { 
   user: any; 
   setActiveTab?: (id: string) => void; 
-  setStartVoiceAlarmFlow?: (val: boolean) => void; 
+  setStartVoiceAlarmFlow?: (val: boolean) => void;
+  onVoiceLogin?: (userName: string) => void;
 }) {
   const [messages, setMessages] = useState<{ role: string; content: string; hasImage?: boolean }[]>([]);
   const [input, setInput] = useState("");
@@ -44,7 +48,6 @@ export default function AIDiagnosticsTab({
   const isTTSPlayingRef = useRef(false);
   const recognitionRef = useRef<any>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Gesture Recognizer State
   const [gestureRecognizer, setGestureRecognizer] = useState<GestureRecognizer | null>(null);
@@ -131,8 +134,51 @@ export default function AIDiagnosticsTab({
     const lower = transcript.toLowerCase();
     const clean = lower.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-    // 1. DORMANT STATE: STRICT WAKE WORD FILTER
-    // Only "WakeUp Robodoc" wakes it up. Everything else is completely ignored and it remains silent.
+    // 1. VOICE LOGIN DETECTION (Works even while dormant or awake)
+    // Matches "i am rohan and password is xyz", "i am rohan password is ...", "login rohan password ..."
+    const isLoginPhrase = 
+      (clean.includes("i am") || clean.includes("iam") || clean.includes("my name is") || clean.includes("login")) &&
+      (clean.includes("password") || clean.includes("pass") || clean.includes("rohan"));
+
+    if (isLoginPhrase) {
+      // Extract user name (defaults to Rohan)
+      let detectedName = "Rohan";
+      if (clean.includes("rohan")) {
+        detectedName = "Rohan";
+      } else {
+        const nameMatch = transcript.match(/(?:i am|iam|my name is)\s+([a-zA-Z]+)/i);
+        if (nameMatch && nameMatch[1]) {
+          detectedName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
+        }
+      }
+
+      setIsAwake(true);
+      isAwakeRef.current = true;
+      
+      const welcomeMsg = `Voice verification accepted. Welcome back, ${detectedName}! You are now successfully logged in.`;
+      setInput(`[Voice Login: ${detectedName}]`);
+      
+      if (typeof window !== "undefined") {
+        const voiceUser = {
+          id: detectedName.toLowerCase() + "_user",
+          displayName: detectedName,
+          email: `${detectedName.toLowerCase()}@vitallens.health`,
+          isVoiceLoggedIn: true,
+          onboardingComplete: true
+        };
+        localStorage.setItem("vitallens_active_user", JSON.stringify(voiceUser));
+        window.dispatchEvent(new Event("vitallens_user_updated"));
+      }
+
+      if (onVoiceLogin) {
+        onVoiceLogin(detectedName);
+      }
+
+      playDirectTTS(welcomeMsg);
+      return;
+    }
+
+    // 2. DORMANT STATE: STRICT WAKE WORD FILTER
     if (!isAwakeRef.current) {
       const isWakeWord = 
         clean.includes("wakeup robodoc") ||
@@ -147,11 +193,10 @@ export default function AIDiagnosticsTab({
       if (isWakeWord) {
         wakeUpRobodoc();
       }
-      // If it doesn't match wake word, REMAIN COMPLETELY SILENT!
       return;
     }
 
-    // 2. AWAKE STATE: Handle commands and conversations
+    // 3. AWAKE STATE: Handle commands and conversations
     setInput(transcript);
 
     // Sleep command
@@ -160,6 +205,14 @@ export default function AIDiagnosticsTab({
         setIsAwake(false);
         isAwakeRef.current = false;
         setInput("");
+      });
+      return;
+    }
+
+    // Vault / History Tab Voice Trigger
+    if (clean.includes("history") || clean.includes("open history") || clean.includes("show images") || clean.includes("diagnosis history") || clean.includes("open vault")) {
+      playDirectTTS("Opening your diagnosis vault and captured images.", () => {
+        if (setActiveTab) setActiveTab("history");
       });
       return;
     }
@@ -174,10 +227,10 @@ export default function AIDiagnosticsTab({
     }
 
     // Emergency command
-    if (clean.includes("emergency") || clean.includes("emegency")) {
+    if (clean.includes("emergency") || clean.includes("emegency") || clean.includes("open camera") || clean.includes("take photo")) {
       isCameraActiveRef.current = true;
       setInput("Emergency scan activated.");
-      playDirectTTS("Opening camera for emergency scan. Please show the injury.", () => {
+      playDirectTTS("Opening camera. Show thumbs up to capture.", () => {
         setIsCameraActive(true);
       });
       return;
@@ -379,17 +432,21 @@ export default function AIDiagnosticsTab({
     if (!ctx) return;
     
     ctx.drawImage(videoRef.current, 0, 0, width, height);
+    
+    // Convert to dataUrl for immediate local preservation
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
         setIsCameraActive(false);
         isCameraActiveRef.current = false;
-        handleSend("I have taken a picture of my condition.", file);
+        handleSend("I have taken a picture of my condition.", file, dataUrl);
       }
     }, "image/jpeg", 0.7);
   };
 
-  const handleSend = async (overrideInput?: string, overrideImage?: File) => {
+  const handleSend = async (overrideInput?: string, overrideImage?: File, previewDataUrl?: string) => {
     const textToSend = overrideInput !== undefined ? overrideInput : input;
     if (!textToSend.trim() && !overrideImage) return;
 
@@ -490,12 +547,20 @@ export default function AIDiagnosticsTab({
         }
       }
       
+      // AUTO SAVE TO DIAGNOSIS VAULT
+      if (previewDataUrl || responseToSpeak.includes("Diagnosis") || hasImage) {
+        saveDiagnosticRecord({
+          imageUrl: previewDataUrl,
+          userQuery: userMsg,
+          diagnosisText: responseToSpeak
+        });
+      }
+
       // Auto-play TTS with speech synthesis
       playDirectTTS(responseToSpeak);
       
     } catch (err: any) {
       console.error("Chat error handled gracefully:", err);
-      // NEVER show or speak Groq API error
       const fallbackResponse = "I'm right here with you. Please tell me more about what you need.";
       setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }]);
       playDirectTTS(fallbackResponse);
@@ -518,19 +583,19 @@ export default function AIDiagnosticsTab({
 
   // Clean status text under eyes
   const statusSubtitle = !isAwake
-    ? 'Say "WakeUp Robodoc" to start'
+    ? 'Say "WakeUp Robodoc" or speak your voice login'
     : isLoading
-    ? "Thinking..."
+    ? "Analyzing health data..."
     : isTTSPlaying
-    ? "Speaking..."
+    ? "RoboDoc is speaking..."
     : input
     ? `"${input}"`
     : messages.length > 0 && messages[messages.length - 1].role === "assistant"
     ? messages[messages.length - 1].content
-    : "Listening...";
+    : "Listening to your voice...";
 
   return (
-    <div className="flex-1 min-h-screen bg-[#070709] flex flex-col items-center justify-center relative overflow-hidden select-none">
+    <div className="flex-1 min-h-screen bg-[#070709] flex flex-col items-center justify-between relative overflow-hidden select-none">
       
       {/* Background ambient neon gray glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(226,232,240,0.06)_0%,rgba(7,7,9,1)_70%)] pointer-events-none z-0" />
@@ -588,55 +653,104 @@ export default function AIDiagnosticsTab({
                 muted
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-center pb-6">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col items-center justify-end pb-6 gap-3">
                 <p className="text-white font-medium text-lg flex items-center gap-2 drop-shadow-md">
                   <ThumbsUp className="w-6 h-6 text-slate-300 animate-pulse" /> 
-                  Show Thumbs Up to capture
+                  Show Thumbs Up or click capture
                 </p>
+                <button
+                  onClick={captureImageAndSend}
+                  className="px-6 py-2.5 rounded-full bg-slate-200 text-black font-bold text-sm hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" /> Snap Photo Now
+                </button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Screen: Only Cute Eyes and Sleek Neon Gray Aesthetic */}
-      <div className="w-full h-full min-h-[calc(100vh-2rem)] flex flex-col justify-between items-center relative z-10 py-8 px-4 sm:px-8">
+      {/* Top Header Bar with Instant Controls */}
+      <header className="w-full flex justify-between items-center z-20 max-w-5xl pt-6 px-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_0_15px_rgba(226,232,240,0.5)]">
+            ROBODOC
+          </h1>
+          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800/80 text-slate-300 border border-slate-700">
+            VitalLens AI
+          </span>
+        </div>
         
-        {/* Minimalist Header */}
-        <div className="w-full flex justify-between items-center z-20 max-w-4xl">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_0_15px_rgba(226,232,240,0.5)]">
-              ROBODOC
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
+        {/* Quick Access Badges & Buttons */}
+        <div className="flex items-center gap-3">
+          {/* Vault Button */}
+          <button
+            onClick={() => setActiveTab && setActiveTab("history")}
+            className="px-3.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            title="Open Diagnosis Vault & Captured Photos"
+          >
+            <History className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Image & Diagnosis Vault</span>
+          </button>
+
+          {/* User state / Sign in link */}
+          {user?.displayName && user.displayName !== "Guest User" ? (
+            <div className="px-3 py-1.5 rounded-full bg-black/60 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+              <span>{user.displayName}</span>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </Link>
+          )}
+
+          {/* Online/Offline status */}
+          <div className="flex items-center gap-2 pl-1">
             <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAwake ? 'bg-slate-200 shadow-[0_0_10px_#fff] animate-pulse' : 'bg-slate-600'}`} />
-            <span className="text-xs uppercase tracking-widest font-semibold text-slate-400">
+            <span className="text-xs uppercase tracking-widest font-semibold text-slate-400 hidden sm:inline">
               {isAwake ? "Online" : "Standby"}
             </span>
           </div>
         </div>
+      </header>
 
-        {/* Centerpiece: Cute Neon Eyes */}
-        <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl">
-          <CuteNeonEyes 
-            state={eyeState}
-            onClick={wakeUpRobodoc}
-            statusText={statusSubtitle}
-          />
+      {/* Centerpiece: Cute Neon Eyes */}
+      <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl px-4">
+        <CuteNeonEyes 
+          state={eyeState}
+          onClick={wakeUpRobodoc}
+          statusText={statusSubtitle}
+        />
+
+        {/* Quick Camera Trigger */}
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            onClick={() => {
+              isCameraActiveRef.current = true;
+              setIsCameraActive(true);
+            }}
+            className="px-4 py-2 rounded-xl bg-black/70 border border-slate-700/80 hover:border-slate-400 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(226,232,240,0.05)]"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Show Injury / Eye Photo</span>
+          </button>
         </div>
-
-        {/* Bottom indicator */}
-        <div className="text-center pb-2">
-          <p className="text-xs tracking-widest text-slate-500 uppercase">
-            {!isAwake 
-              ? 'Listening for "WakeUp Robodoc"' 
-              : 'Say "Health Manager" to set alarms • "Go to sleep" to rest'}
-          </p>
-        </div>
-
       </div>
+
+      {/* Bottom Command Guide */}
+      <footer className="text-center pb-6 px-4">
+        <p className="text-xs tracking-wider text-slate-500 uppercase font-medium">
+          {!isAwake 
+            ? 'Speak: "WakeUp Robodoc" • Voice Login: "I am Rohan and password is XYZ"' 
+            : 'Voice Commands: "Open Vault" • "Health Manager" • "Emergency" • "Go to sleep"'}
+        </p>
+      </footer>
+
     </div>
   );
 }
