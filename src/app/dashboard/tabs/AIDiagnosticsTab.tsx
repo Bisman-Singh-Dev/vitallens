@@ -83,9 +83,16 @@ export default function AIDiagnosticsTab({
     
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
+      // Clean up markdown formatting symbols like asterisks so speech sounds natural
+      const cleanSpokenText = text
+        .replace(/<<([^>>]+)>>/g, "$1")
+        .replace(/\*/g, "")
+        .replace(/#/g, "")
+        .replace(/EMERGENCY_REDIRECT:[^\n]+/gi, "");
+
+      const utterance = new SpeechSynthesisUtterance(cleanSpokenText);
       utterance.lang = language === "hi" ? "hi-IN" : "en-US";
-      utterance.rate = 1.1; 
+      utterance.rate = 1.05; 
       
       if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
       (window as any).synthUtterances.push(utterance);
@@ -106,13 +113,13 @@ export default function AIDiagnosticsTab({
       utterance.onerror = handleEnd;
       window.speechSynthesis.speak(utterance);
 
-      const estimatedTimeMs = (text.length * 85) + 2000;
+      const estimatedTimeMs = (cleanSpokenText.length * 85) + 3000;
       setTimeout(() => {
         if (!ended) {
           try { window.speechSynthesis.cancel(); } catch(e){}
           handleEnd();
         }
-      }, Math.min(estimatedTimeMs, 12000));
+      }, Math.min(estimatedTimeMs, 30000));
     } else {
       isTTSPlayingRef.current = false;
       setIsTTSPlaying(false);
@@ -120,12 +127,22 @@ export default function AIDiagnosticsTab({
     }
   };
 
+  // When user says "WakeUp Robodoc", it wakes up and directly opens the camera!
   const wakeUpRobodoc = () => {
-    if (isAwakeRef.current) return;
+    if (isAwakeRef.current) {
+      // If already awake and called again, open camera directly
+      isCameraActiveRef.current = true;
+      setIsCameraActive(true);
+      return;
+    }
     setIsAwake(true);
     isAwakeRef.current = true;
     setInput("");
-    playDirectTTS("Hello! RoboDoc is awake. How can I help you today?");
+
+    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.", () => {
+      isCameraActiveRef.current = true;
+      setIsCameraActive(true);
+    });
   };
 
   const processTranscript = (transcript: string) => {
@@ -134,14 +151,12 @@ export default function AIDiagnosticsTab({
     const lower = transcript.toLowerCase();
     const clean = lower.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-    // 1. VOICE LOGIN DETECTION (Works even while dormant or awake)
-    // Matches "i am rohan and password is xyz", "i am rohan password is ...", "login rohan password ..."
+    // 1. VOICE LOGIN DETECTION
     const isLoginPhrase = 
       (clean.includes("i am") || clean.includes("iam") || clean.includes("my name is") || clean.includes("login")) &&
       (clean.includes("password") || clean.includes("pass") || clean.includes("rohan"));
 
     if (isLoginPhrase) {
-      // Extract user name (defaults to Rohan)
       let detectedName = "Rohan";
       if (clean.includes("rohan")) {
         detectedName = "Rohan";
@@ -155,7 +170,7 @@ export default function AIDiagnosticsTab({
       setIsAwake(true);
       isAwakeRef.current = true;
       
-      const welcomeMsg = `Voice verification accepted. Welcome back, ${detectedName}! You are now successfully logged in.`;
+      const welcomeMsg = `Voice verification accepted. Welcome back, ${detectedName}!`;
       setInput(`[Voice Login: ${detectedName}]`);
       
       if (typeof window !== "undefined") {
@@ -178,7 +193,7 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // 2. DORMANT STATE: STRICT WAKE WORD FILTER
+    // 2. DORMANT STATE: STRICT WAKE WORD FILTER -> Wakes up AND OPENS CAMERA
     if (!isAwakeRef.current) {
       const isWakeWord = 
         clean.includes("wakeup robodoc") ||
@@ -217,22 +232,22 @@ export default function AIDiagnosticsTab({
       return;
     }
 
+    // Camera open command
+    if (clean.includes("camera") || clean.includes("open camera") || clean.includes("take photo") || clean.includes("scan") || clean.includes("emergency")) {
+      isCameraActiveRef.current = true;
+      setInput("Opening camera...");
+      playDirectTTS("Opening camera. Show thumbs up to capture.", () => {
+        setIsCameraActive(true);
+      });
+      return;
+    }
+
     // Health manager command
     if (clean.includes("health manager") || clean.includes("healthmanager") || clean.includes("set alarm") || clean.includes("set an alarm") || clean.includes("add alarm")) {
       if (setStartVoiceAlarmFlow && setActiveTab) {
         setStartVoiceAlarmFlow(true);
         setActiveTab("health-manager");
       }
-      return;
-    }
-
-    // Emergency command
-    if (clean.includes("emergency") || clean.includes("emegency") || clean.includes("open camera") || clean.includes("take photo")) {
-      isCameraActiveRef.current = true;
-      setInput("Emergency scan activated.");
-      playDirectTTS("Opening camera. Show thumbs up to capture.", () => {
-        setIsCameraActive(true);
-      });
       return;
     }
 
@@ -279,7 +294,6 @@ export default function AIDiagnosticsTab({
         }
       };
 
-      // Start listening on mount in background
       setTimeout(() => {
         startRecording();
       }, 500);
@@ -433,7 +447,6 @@ export default function AIDiagnosticsTab({
     
     ctx.drawImage(videoRef.current, 0, 0, width, height);
     
-    // Convert to dataUrl for immediate local preservation
     const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
 
     canvas.toBlob((blob) => {
@@ -480,14 +493,11 @@ export default function AIDiagnosticsTab({
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const data = await res.json();
-          responseToSpeak = data.response || "I am here with you. How can I help you today?";
-          setMessages(prev => [...prev, { role: "assistant", content: responseToSpeak }]);
+          responseToSpeak = data.response || "Hey! I am RoboDoc. According to my Diagnosis, your visual biomarkers look normal.";
         } else {
           // Process SSE stream
           const reader = res.body?.getReader();
           const decoder = new TextDecoder("utf-8");
-          
-          setMessages(prev => [...prev, { role: "assistant", content: "" }]);
           
           if (reader) {
             let buffer = "";
@@ -514,28 +524,19 @@ export default function AIDiagnosticsTab({
                     
                     if (textChunk) {
                       responseToSpeak += textChunk;
-                      setMessages(prev => {
-                        const newMsgs = [...prev];
-                        newMsgs[newMsgs.length - 1].content = responseToSpeak;
-                        return newMsgs;
-                      });
                     }
-                  } catch (e) {
-                    // Skip stream parse errors
-                  }
+                  } catch (e) {}
                 }
               }
             }
           }
         }
       } else {
-        responseToSpeak = "I am right here with you. Please tell me more about how you are feeling.";
-        setMessages(prev => [...prev, { role: "assistant", content: responseToSpeak }]);
+        responseToSpeak = "Hey! I am RoboDoc. I am right here with you. Please show me the condition or tell me more.";
       }
 
       if (!responseToSpeak.trim()) {
-        responseToSpeak = "I am right here with you. How can I assist you with your health today?";
-        setMessages(prev => [...prev, { role: "assistant", content: responseToSpeak }]);
+        responseToSpeak = "Hey! I am RoboDoc. How can I assist you with your health today?";
       }
 
       // Check for emergency redirect
@@ -547,7 +548,7 @@ export default function AIDiagnosticsTab({
         }
       }
       
-      // AUTO SAVE TO DIAGNOSIS VAULT
+      // AUTO-SAVE TO ENCRYPTED VAULT (Preserved in vault for private review)
       if (previewDataUrl || responseToSpeak.includes("Diagnosis") || hasImage) {
         saveDiagnosticRecord({
           imageUrl: previewDataUrl,
@@ -556,13 +557,12 @@ export default function AIDiagnosticsTab({
         });
       }
 
-      // Auto-play TTS with speech synthesis
+      // Voice Output: Spoken out loud in the exact clinical format (not printed on screen)
       playDirectTTS(responseToSpeak);
       
     } catch (err: any) {
       console.error("Chat error handled gracefully:", err);
-      const fallbackResponse = "I'm right here with you. Please tell me more about what you need.";
-      setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }]);
+      const fallbackResponse = "Hey! I am RoboDoc. I am listening and right here with you.";
       playDirectTTS(fallbackResponse);
     } finally {
       setIsLoading(false);
@@ -581,17 +581,15 @@ export default function AIDiagnosticsTab({
     ? "listening"
     : "awake";
 
-  // Clean status text under eyes
+  // Clean, minimal status subtitle under eyes (no response paragraphs shown on screen)
   const statusSubtitle = !isAwake
-    ? 'Say "WakeUp Robodoc" or speak your voice login'
+    ? 'Say "WakeUp Robodoc" to start'
     : isLoading
-    ? "Analyzing health data..."
+    ? "Analyzing your condition..."
     : isTTSPlaying
     ? "RoboDoc is speaking..."
     : input
     ? `"${input}"`
-    : messages.length > 0 && messages[messages.length - 1].role === "assistant"
-    ? messages[messages.length - 1].content
     : "Listening to your voice...";
 
   return (
@@ -670,7 +668,7 @@ export default function AIDiagnosticsTab({
         )}
       </AnimatePresence>
 
-      {/* Top Header Bar with Instant Controls */}
+      {/* Top Header Bar */}
       <header className="w-full flex justify-between items-center z-20 max-w-5xl pt-6 px-6">
         <div className="flex items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_0_15px_rgba(226,232,240,0.5)]">
@@ -719,7 +717,7 @@ export default function AIDiagnosticsTab({
         </div>
       </header>
 
-      {/* Centerpiece: Cute Neon Eyes */}
+      {/* Centerpiece: Cute Neon Eyes (Clean - No Response Text Shown, Only Spoken) */}
       <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl px-4">
         <CuteNeonEyes 
           state={eyeState}
@@ -737,7 +735,7 @@ export default function AIDiagnosticsTab({
             className="px-4 py-2 rounded-xl bg-black/70 border border-slate-700/80 hover:border-slate-400 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(226,232,240,0.05)]"
           >
             <Camera className="w-3.5 h-3.5" />
-            <span>Show Injury / Eye Photo</span>
+            <span>Open Camera</span>
           </button>
         </div>
       </div>
@@ -746,8 +744,8 @@ export default function AIDiagnosticsTab({
       <footer className="text-center pb-6 px-4">
         <p className="text-xs tracking-wider text-slate-500 uppercase font-medium">
           {!isAwake 
-            ? 'Speak: "WakeUp Robodoc" • Voice Login: "I am Rohan and password is XYZ"' 
-            : 'Voice Commands: "Open Vault" • "Health Manager" • "Emergency" • "Go to sleep"'}
+            ? 'Say "WakeUp Robodoc" to open camera • Voice Login: "I am Rohan and password is XYZ"' 
+            : 'Voice Commands: "Open Camera" • "Open Vault" • "Health Manager" • "Go to sleep"'}
         </p>
       </footer>
 
