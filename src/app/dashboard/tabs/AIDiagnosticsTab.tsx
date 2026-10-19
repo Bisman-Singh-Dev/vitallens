@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut } from "lucide-react";
+import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
 import CuteNeonEyes, { EyeState } from "@/components/CuteNeonEyes";
@@ -29,6 +29,9 @@ export default function AIDiagnosticsTab({
   const [isAwake, setIsAwake] = useState(false);
   const isAwakeRef = useRef(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
+
+  // Toggle Visibility for Top Nav controls (Vault & Sign In buttons)
+  const [showNavControls, setShowNavControls] = useState(false);
 
   // UI Modal Camera
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -77,13 +80,11 @@ export default function AIDiagnosticsTab({
   const playDirectTTS = (text: string, onEnd?: () => void) => {
     isTTSPlayingRef.current = true;
     setIsTTSPlaying(true);
-    if (recognitionRef.current) { 
-      try { recognitionRef.current.stop(); } catch(e){} 
-    }
     
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      // Clean up markdown formatting symbols like asterisks so speech sounds natural
+
+      // Clean text of markdown characters so it reads smoothly
       const cleanSpokenText = text
         .replace(/<<([^>>]+)>>/g, "$1")
         .replace(/\*/g, "")
@@ -103,9 +104,6 @@ export default function AIDiagnosticsTab({
         ended = true;
         isTTSPlayingRef.current = false;
         setIsTTSPlaying(false);
-        if (isListeningRef.current && recognitionRef.current) {
-          try { recognitionRef.current.start(); } catch(e){}
-        }
         if (onEnd) onEnd();
       };
 
@@ -127,34 +125,27 @@ export default function AIDiagnosticsTab({
     }
   };
 
-  // When user says "WakeUp Robodoc", it wakes up and directly opens the camera!
-  const wakeUpRobodoc = () => {
-    if (isAwakeRef.current) {
-      // If already awake and called again, open camera directly
-      isCameraActiveRef.current = true;
-      setIsCameraActive(true);
-      return;
-    }
+  // Directly launches camera and speaks greeting
+  const wakeUpRobodocAndLaunchCamera = () => {
     setIsAwake(true);
     isAwakeRef.current = true;
     setInput("");
 
-    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.", () => {
-      isCameraActiveRef.current = true;
-      setIsCameraActive(true);
-    });
+    // Open camera immediately
+    isCameraActiveRef.current = true;
+    setIsCameraActive(true);
+
+    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.");
   };
 
   const processTranscript = (transcript: string) => {
-    if (isCameraActiveRef.current) return;
-
     const lower = transcript.toLowerCase();
     const clean = lower.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
     // 1. VOICE LOGIN DETECTION
     const isLoginPhrase = 
       (clean.includes("i am") || clean.includes("iam") || clean.includes("my name is") || clean.includes("login")) &&
-      (clean.includes("password") || clean.includes("pass") || clean.includes("rohan"));
+      (clean.includes("rohan") || clean.includes("password"));
 
     if (isLoginPhrase) {
       let detectedName = "Rohan";
@@ -193,23 +184,26 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // 2. DORMANT STATE: STRICT WAKE WORD FILTER -> Wakes up AND OPENS CAMERA
-    if (!isAwakeRef.current) {
-      const isWakeWord = 
-        clean.includes("wakeup robodoc") ||
-        clean.includes("wake up robodoc") ||
-        clean.includes("wake up robo doc") ||
-        clean.includes("wakeup robo doc") ||
-        clean.includes("wake up robot") ||
-        clean.includes("wakeup robot") ||
-        clean.includes("wake up") ||
-        clean.includes("wakeup");
+    // 2. WAKE WORD DETECTION: Matches any variation of "wake up robodoc" or "wakeup"
+    const isWakeWord = 
+      clean.includes("wakeup robodoc") ||
+      clean.includes("wake up robodoc") ||
+      clean.includes("wake up robo doc") ||
+      clean.includes("wakeup robo doc") ||
+      clean.includes("wake up robot") ||
+      clean.includes("wakeup robot") ||
+      clean.includes("wake up") ||
+      clean.includes("wakeup") ||
+      clean.includes("robot doc") ||
+      clean.includes("robodoc");
 
-      if (isWakeWord) {
-        wakeUpRobodoc();
-      }
+    if (isWakeWord && !isCameraActiveRef.current) {
+      wakeUpRobodocAndLaunchCamera();
       return;
     }
+
+    // If dormant and not a wake word, ignore completely
+    if (!isAwakeRef.current) return;
 
     // 3. AWAKE STATE: Handle commands and conversations
     setInput(transcript);
@@ -224,20 +218,18 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // Vault / History Tab Voice Trigger
-    if (clean.includes("history") || clean.includes("open history") || clean.includes("show images") || clean.includes("diagnosis history") || clean.includes("open vault")) {
-      playDirectTTS("Opening your diagnosis vault and captured images.", () => {
-        if (setActiveTab) setActiveTab("history");
-      });
+    // Camera open command
+    if (clean.includes("camera") || clean.includes("open camera") || clean.includes("take photo") || clean.includes("scan") || clean.includes("take picture")) {
+      isCameraActiveRef.current = true;
+      setIsCameraActive(true);
+      playDirectTTS("Opening camera. Show thumbs up to capture.");
       return;
     }
 
-    // Camera open command
-    if (clean.includes("camera") || clean.includes("open camera") || clean.includes("take photo") || clean.includes("scan") || clean.includes("emergency")) {
-      isCameraActiveRef.current = true;
-      setInput("Opening camera...");
-      playDirectTTS("Opening camera. Show thumbs up to capture.", () => {
-        setIsCameraActive(true);
+    // Vault / History Tab Voice Trigger
+    if (clean.includes("history") || clean.includes("open history") || clean.includes("show images") || clean.includes("diagnosis history") || clean.includes("open vault")) {
+      playDirectTTS("Opening your diagnosis vault.", () => {
+        if (setActiveTab) setActiveTab("history");
       });
       return;
     }
@@ -262,59 +254,78 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // Normal Conversation
-    const cleanedTranscript = transcript.trim();
-    if (cleanedTranscript.length > 0) {
-      handleSend(cleanedTranscript);
+    // Normal Conversation (when camera is not active)
+    if (!isCameraActiveRef.current) {
+      const cleanedTranscript = transcript.trim();
+      if (cleanedTranscript.length > 0) {
+        handleSend(cleanedTranscript);
+      }
     }
   };
 
+  // Continuous speech recognition loop that NEVER dies
   useEffect(() => {
-    if (typeof window !== "undefined" && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = false;
-      
-      recognitionRef.current.onresult = (event: any) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
-        }
-        processTranscript(transcript);
-      };
-      
-      recognitionRef.current.onerror = () => {
-        // Silently recover background listener
-      };
+    if (typeof window === "undefined") return;
 
-      recognitionRef.current.onend = () => {
-        if (isListeningRef.current && !isTTSPlayingRef.current) {
-          try { recognitionRef.current.start(); } catch(e){}
-        }
-      };
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
 
-      setTimeout(() => {
-        startRecording();
-      }, 500);
-    }
+    const startListener = () => {
+      try {
+        if (recognitionRef.current) {
+          try { recognitionRef.current.abort(); } catch (e) {}
+        }
+        
+        const recognizer = new SpeechRecognition();
+        recognizer.continuous = true;
+        recognizer.interimResults = false;
+        recognizer.lang = "en-US";
+
+        recognizer.onresult = (event: any) => {
+          let transcript = "";
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+          }
+          if (transcript.trim()) {
+            processTranscript(transcript);
+          }
+        };
+
+        recognizer.onerror = (e: any) => {
+          // If error is not fatal, try restarting quietly
+          if (e.error !== "not-allowed") {
+            setTimeout(() => {
+              if (isListeningRef.current) startListener();
+            }, 1000);
+          }
+        };
+
+        recognizer.onend = () => {
+          if (isListeningRef.current) {
+            setTimeout(() => {
+              try { recognizer.start(); } catch(e) {}
+            }, 400);
+          }
+        };
+
+        recognizer.start();
+        recognitionRef.current = recognizer;
+        setIsListening(true);
+        isListeningRef.current = true;
+      } catch (err) {
+        console.warn("Speech recognition initialization error:", err);
+      }
+    };
+
+    startListener();
+
+    return () => {
+      isListeningRef.current = false;
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+      }
+    };
   }, []);
-
-  const startRecording = () => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.start(); } catch(e){}
-    }
-    setIsListening(true);
-    isListeningRef.current = true;
-  };
-
-  const stopRecording = () => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch(e){}
-    }
-    setIsListening(false);
-    isListeningRef.current = false;
-  };
 
   useEffect(() => {
     const setupCamera = async () => {
@@ -357,12 +368,6 @@ export default function AIDiagnosticsTab({
   useEffect(() => {
     isCameraActiveRef.current = isCameraActive;
     emergencyVideoUrlRef.current = emergencyVideoUrl;
-    
-    if (isCameraActive || emergencyVideoUrl) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
   }, [isCameraActive, emergencyVideoUrl]);
 
   // Continuous Gesture Detection Loop
@@ -388,7 +393,7 @@ export default function AIDiagnosticsTab({
               
               if (gestureName === "Thumb_Up" && isCameraActive && !isLoading) {
                 thumbsUpFrames++;
-                if (thumbsUpFrames > 45) {
+                if (thumbsUpFrames > 30) {
                   thumbsUpFrames = 0;
                   captureImageAndSend();
                   return;
@@ -471,8 +476,6 @@ export default function AIDiagnosticsTab({
     setIsLoading(true);
     isLoadingRef.current = true;
 
-    stopRecording();
-
     try {
       const formData = new FormData();
       formData.append("message", userMsg);
@@ -548,7 +551,7 @@ export default function AIDiagnosticsTab({
         }
       }
       
-      // AUTO-SAVE TO ENCRYPTED VAULT (Preserved in vault for private review)
+      // AUTO-SAVE TO VAULT
       if (previewDataUrl || responseToSpeak.includes("Diagnosis") || hasImage) {
         saveDiagnosticRecord({
           imageUrl: previewDataUrl,
@@ -581,11 +584,11 @@ export default function AIDiagnosticsTab({
     ? "listening"
     : "awake";
 
-  // Clean, minimal status subtitle under eyes (no response paragraphs shown on screen)
+  // Clean, minimal status subtitle under eyes (NO response text paragraphs shown on screen)
   const statusSubtitle = !isAwake
-    ? 'Say "WakeUp Robodoc" to start'
+    ? 'Say "WakeUp Robodoc" or click eyes to open camera'
     : isLoading
-    ? "Analyzing your condition..."
+    ? "Analyzing condition..."
     : isTTSPlaying
     ? "RoboDoc is speaking..."
     : input
@@ -634,16 +637,19 @@ export default function AIDiagnosticsTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/90 z-30 flex flex-col items-center justify-center p-8 backdrop-blur-md"
+            className="absolute inset-0 bg-black/95 z-40 flex flex-col items-center justify-center p-6 backdrop-blur-md"
           >
             <button 
-              onClick={() => setIsCameraActive(false)}
-              className="absolute top-6 right-6 p-3 text-gray-400 hover:text-white bg-neutral-800 rounded-full"
+              onClick={() => {
+                setIsCameraActive(false);
+                isCameraActiveRef.current = false;
+              }}
+              className="absolute top-6 right-6 p-3 text-slate-400 hover:text-white bg-neutral-900 border border-slate-700 rounded-full shadow-lg"
             >
-              <X className="w-8 h-8" />
+              <X className="w-7 h-7" />
             </button>
             
-            <div className="relative w-full max-w-lg mx-auto aspect-video rounded-3xl border-2 border-slate-400 overflow-hidden shadow-[0_0_35px_rgba(226,232,240,0.3)]">
+            <div className="relative w-full max-w-lg mx-auto aspect-video rounded-3xl border-2 border-slate-300 overflow-hidden shadow-[0_0_40px_rgba(226,232,240,0.3)] bg-black">
               <video 
                 ref={videoRef}
                 autoPlay
@@ -652,8 +658,8 @@ export default function AIDiagnosticsTab({
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col items-center justify-end pb-6 gap-3">
-                <p className="text-white font-medium text-lg flex items-center gap-2 drop-shadow-md">
-                  <ThumbsUp className="w-6 h-6 text-slate-300 animate-pulse" /> 
+                <p className="text-white font-medium text-base flex items-center gap-2 drop-shadow-md">
+                  <ThumbsUp className="w-5 h-5 text-slate-300 animate-pulse" /> 
                   Show Thumbs Up or click capture
                 </p>
                 <button
@@ -668,7 +674,7 @@ export default function AIDiagnosticsTab({
         )}
       </AnimatePresence>
 
-      {/* Top Header Bar */}
+      {/* Top Header Bar with Optional Hidden Controls */}
       <header className="w-full flex justify-between items-center z-20 max-w-5xl pt-6 px-6">
         <div className="flex items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_0_15px_rgba(226,232,240,0.5)]">
@@ -679,35 +685,55 @@ export default function AIDiagnosticsTab({
           </span>
         </div>
         
-        {/* Quick Access Badges & Buttons */}
+        {/* Toggleable Action Buttons: Hidden by default, shown by clicking the eye toggle */}
         <div className="flex items-center gap-3">
-          {/* Vault Button */}
+          <AnimatePresence>
+            {showNavControls && (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex items-center gap-3"
+              >
+                {/* Vault Button */}
+                <button
+                  onClick={() => setActiveTab && setActiveTab("history")}
+                  className="px-3.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                  title="Open Diagnosis Vault & Captured Photos"
+                >
+                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Diagnosis Vault</span>
+                </button>
+
+                {/* User state / Sign in link */}
+                {user?.displayName && user.displayName !== "Guest User" ? (
+                  <div className="px-3 py-1.5 rounded-full bg-black/60 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                    <span>{user.displayName}</span>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="px-3 py-1.5 rounded-full bg-slate-200 hover:bg-white text-black text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(226,232,240,0.2)]"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </Link>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Toggle Visibility Button (Hides / Reveals Vault and Sign In) */}
           <button
-            onClick={() => setActiveTab && setActiveTab("history")}
-            className="px-3.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-            title="Open Diagnosis Vault & Captured Photos"
+            onClick={() => setShowNavControls(!showNavControls)}
+            className="p-2 rounded-full bg-neutral-900 border border-slate-700 text-slate-400 hover:text-white transition-all shadow-sm"
+            title={showNavControls ? "Hide Sign In & Vault buttons" : "Show Sign In & Vault buttons"}
           >
-            <History className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Image & Diagnosis Vault</span>
+            {showNavControls ? <EyeOff className="w-4 h-4 text-slate-300" /> : <Eye className="w-4 h-4 text-slate-400" />}
           </button>
 
-          {/* User state / Sign in link */}
-          {user?.displayName && user.displayName !== "Guest User" ? (
-            <div className="px-3 py-1.5 rounded-full bg-black/60 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-              <span>{user.displayName}</span>
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-all"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </Link>
-          )}
-
-          {/* Online/Offline status */}
+          {/* Online/Offline status indicator */}
           <div className="flex items-center gap-2 pl-1">
             <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAwake ? 'bg-slate-200 shadow-[0_0_10px_#fff] animate-pulse' : 'bg-slate-600'}`} />
             <span className="text-xs uppercase tracking-widest font-semibold text-slate-400 hidden sm:inline">
@@ -717,24 +743,21 @@ export default function AIDiagnosticsTab({
         </div>
       </header>
 
-      {/* Centerpiece: Cute Neon Eyes (Clean - No Response Text Shown, Only Spoken) */}
+      {/* Centerpiece: Pure Neon Gray Living Eyes */}
       <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl px-4">
         <CuteNeonEyes 
           state={eyeState}
-          onClick={wakeUpRobodoc}
+          onClick={wakeUpRobodocAndLaunchCamera}
           statusText={statusSubtitle}
         />
 
-        {/* Quick Camera Trigger */}
-        <div className="mt-6 flex items-center gap-3">
+        {/* Quick Manual Camera Trigger */}
+        <div className="mt-8 flex items-center gap-3">
           <button
-            onClick={() => {
-              isCameraActiveRef.current = true;
-              setIsCameraActive(true);
-            }}
-            className="px-4 py-2 rounded-xl bg-black/70 border border-slate-700/80 hover:border-slate-400 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(226,232,240,0.05)]"
+            onClick={wakeUpRobodocAndLaunchCamera}
+            className="px-5 py-2.5 rounded-xl bg-neutral-900 border border-slate-700 hover:border-slate-400 text-slate-200 hover:text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(226,232,240,0.08)]"
           >
-            <Camera className="w-3.5 h-3.5" />
+            <Camera className="w-4 h-4 text-slate-300" />
             <span>Open Camera</span>
           </button>
         </div>
@@ -744,7 +767,7 @@ export default function AIDiagnosticsTab({
       <footer className="text-center pb-6 px-4">
         <p className="text-xs tracking-wider text-slate-500 uppercase font-medium">
           {!isAwake 
-            ? 'Say "WakeUp Robodoc" to open camera • Voice Login: "I am Rohan and password is XYZ"' 
+            ? 'Say "WakeUp Robodoc" to open camera • Tap eye icon top-right for Sign In / Vault' 
             : 'Voice Commands: "Open Camera" • "Open Vault" • "Health Manager" • "Go to sleep"'}
         </p>
       </footer>
