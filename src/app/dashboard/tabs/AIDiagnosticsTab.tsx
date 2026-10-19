@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut, Eye, EyeOff } from "lucide-react";
+import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
 import CuteNeonEyes, { EyeState } from "@/components/CuteNeonEyes";
@@ -25,12 +25,12 @@ export default function AIDiagnosticsTab({
   const isLoadingRef = useRef(false);
   const [language, setLanguage] = useState<"en" | "hi">("en");
   
-  // Awake State: Starts dormant until "WakeUp Robodoc" is heard
+  // Awake State
   const [isAwake, setIsAwake] = useState(false);
   const isAwakeRef = useRef(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
 
-  // Toggle Visibility for Top Nav controls (Vault & Sign In buttons)
+  // Hidden Nav controls (Vault & Sign In buttons)
   const [showNavControls, setShowNavControls] = useState(false);
 
   // UI Modal Camera
@@ -40,6 +40,7 @@ export default function AIDiagnosticsTab({
   // Invisible Background Camera (for gestures)
   const [isBackgroundCameraActive, setIsBackgroundCameraActive] = useState(false);
   
+  // Emergency First-Aid Video
   const [emergencyVideoUrl, setEmergencyVideoUrl] = useState("");
   const emergencyVideoUrlRef = useRef("");
   
@@ -77,6 +78,7 @@ export default function AIDiagnosticsTab({
     initModel();
   }, []);
 
+  // Voice Speech Synthesis: Always speaks out loud without delay
   const playDirectTTS = (text: string, onEnd?: () => void) => {
     isTTSPlayingRef.current = true;
     setIsTTSPlaying(true);
@@ -84,7 +86,6 @@ export default function AIDiagnosticsTab({
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
 
-      // Clean text of markdown characters so it reads smoothly
       const cleanSpokenText = text
         .replace(/<<([^>>]+)>>/g, "$1")
         .replace(/\*/g, "")
@@ -125,24 +126,59 @@ export default function AIDiagnosticsTab({
     }
   };
 
-  // Directly launches camera and speaks greeting
+  // Speaks greeting FIRST, then launches camera
   const wakeUpRobodocAndLaunchCamera = () => {
     setIsAwake(true);
     isAwakeRef.current = true;
     setInput("");
 
-    // Open camera immediately
+    // Start speaking greeting immediately
+    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.");
+
+    // Open camera
     isCameraActiveRef.current = true;
     setIsCameraActive(true);
+  };
 
-    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.");
+  // Triggers emergency procedure: opens camera, speaks emergency alert, then launches First-Aid video
+  const triggerEmergencyFlow = (emergencyType: string = "general") => {
+    isCameraActiveRef.current = true;
+    setIsCameraActive(true);
+    setInput("Emergency scan activated.");
+
+    // Select suitable first-aid emergency video
+    let targetVideo = "https://www.youtube.com/embed/AhANvBB9hz0?autoplay=1"; // Cuts / general first aid
+    if (emergencyType.includes("burn")) {
+      targetVideo = "https://www.youtube.com/embed/B51VgoEZcDs?autoplay=1";
+    } else if (emergencyType.includes("chok")) {
+      targetVideo = "https://www.youtube.com/embed/4j329wUsl3s?autoplay=1";
+    } else if (emergencyType.includes("cpr") || emergencyType.includes("heart")) {
+      targetVideo = "https://www.youtube.com/embed/TsJ49Np3HS0?autoplay=1";
+    }
+
+    playDirectTTS("Emergency mode activated. Opening camera to assess the situation and loading first aid guidance.", () => {
+      setEmergencyVideoUrl(targetVideo);
+    });
   };
 
   const processTranscript = (transcript: string) => {
     const lower = transcript.toLowerCase();
     const clean = lower.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-    // 1. VOICE LOGIN DETECTION
+    // 1. EMERGENCY COMMAND (Priority #1: works at any time, even dormant)
+    if (
+      clean.includes("emergency") || 
+      clean.includes("help me") || 
+      clean.includes("i am injured") || 
+      clean.includes("first aid") || 
+      clean.includes("accident") ||
+      clean.includes("bleeding")
+    ) {
+      triggerEmergencyFlow(clean);
+      return;
+    }
+
+    // 2. VOICE LOGIN DETECTION
     const isLoginPhrase = 
       (clean.includes("i am") || clean.includes("iam") || clean.includes("my name is") || clean.includes("login")) &&
       (clean.includes("rohan") || clean.includes("password"));
@@ -184,7 +220,7 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // 2. WAKE WORD DETECTION: Matches any variation of "wake up robodoc" or "wakeup"
+    // 3. WAKE WORD: Speaks out loud AND opens camera
     const isWakeWord = 
       clean.includes("wakeup robodoc") ||
       clean.includes("wake up robodoc") ||
@@ -202,10 +238,9 @@ export default function AIDiagnosticsTab({
       return;
     }
 
-    // If dormant and not a wake word, ignore completely
     if (!isAwakeRef.current) return;
 
-    // 3. AWAKE STATE: Handle commands and conversations
+    // 4. AWAKE STATE COMMANDS
     setInput(transcript);
 
     // Sleep command
@@ -263,7 +298,7 @@ export default function AIDiagnosticsTab({
     }
   };
 
-  // Continuous speech recognition loop that NEVER dies
+  // Continuous speech recognition loop
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -292,7 +327,6 @@ export default function AIDiagnosticsTab({
         };
 
         recognizer.onerror = (e: any) => {
-          // If error is not fatal, try restarting quietly
           if (e.error !== "not-allowed") {
             setTimeout(() => {
               if (isListeningRef.current) startListener();
@@ -313,7 +347,7 @@ export default function AIDiagnosticsTab({
         setIsListening(true);
         isListeningRef.current = true;
       } catch (err) {
-        console.warn("Speech recognition initialization error:", err);
+        console.warn("Speech recognition error:", err);
       }
     };
 
@@ -498,7 +532,6 @@ export default function AIDiagnosticsTab({
           const data = await res.json();
           responseToSpeak = data.response || "Hey! I am RoboDoc. According to my Diagnosis, your visual biomarkers look normal.";
         } else {
-          // Process SSE stream
           const reader = res.body?.getReader();
           const decoder = new TextDecoder("utf-8");
           
@@ -560,11 +593,11 @@ export default function AIDiagnosticsTab({
         });
       }
 
-      // Voice Output: Spoken out loud in the exact clinical format (not printed on screen)
+      // Spoken out loud in clinical format (not printed on screen)
       playDirectTTS(responseToSpeak);
       
     } catch (err: any) {
-      console.error("Chat error handled gracefully:", err);
+      console.error("Chat error:", err);
       const fallbackResponse = "Hey! I am RoboDoc. I am listening and right here with you.";
       playDirectTTS(fallbackResponse);
     } finally {
@@ -573,7 +606,6 @@ export default function AIDiagnosticsTab({
     }
   };
 
-  // Determine current eye expression state
   const eyeState: EyeState = !isAwake
     ? "dormant"
     : isTTSPlaying
@@ -584,9 +616,8 @@ export default function AIDiagnosticsTab({
     ? "listening"
     : "awake";
 
-  // Clean, minimal status subtitle under eyes (NO response text paragraphs shown on screen)
   const statusSubtitle = !isAwake
-    ? 'Say "WakeUp Robodoc" or click eyes to open camera'
+    ? 'Say "WakeUp Robodoc" or "Emergency"'
     : isLoading
     ? "Analyzing condition..."
     : isTTSPlaying
@@ -596,20 +627,24 @@ export default function AIDiagnosticsTab({
     : "Listening to your voice...";
 
   return (
-    <div className="flex-1 min-h-screen bg-[#070709] flex flex-col items-center justify-between relative overflow-hidden select-none">
+    <div className="flex-1 min-h-screen bg-[#050507] flex flex-col items-center justify-between relative overflow-hidden select-none">
       
-      {/* Background ambient neon gray glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(226,232,240,0.06)_0%,rgba(7,7,9,1)_70%)] pointer-events-none z-0" />
+      {/* Ambient Neon Red Glow Aura */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,51,102,0.12)_0%,rgba(5,5,7,1)_70%)] pointer-events-none z-0" />
       
       {/* Emergency First Aid Video Modal */}
       {emergencyVideoUrl && (
-        <div className="absolute inset-0 z-50 bg-black flex flex-col rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(226,232,240,0.3)]">
-          <div className="flex justify-end p-4 bg-neutral-900 border-b border-slate-700">
+        <div className="absolute inset-0 z-50 bg-black flex flex-col rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(255,51,102,0.6)] border-2 border-neon-red">
+          <div className="flex justify-between items-center p-4 bg-[#120508] border-b border-red-900/60">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-6 h-6 text-neon-red animate-pulse" />
+              <span className="font-bold text-white uppercase tracking-wider text-sm">Emergency First Aid Protocol</span>
+            </div>
             <button 
-              onClick={() => { setEmergencyVideoUrl(""); window.location.reload(); }} 
-              className="bg-slate-800 text-slate-200 hover:bg-slate-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all"
+              onClick={() => { setEmergencyVideoUrl(""); }} 
+              className="bg-red-950/80 hover:bg-neon-red text-white border border-red-500/60 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(255,51,102,0.3)]"
             >
-              <X className="w-5 h-5" /> Close First Aid Video
+              <X className="w-5 h-5" /> Close Emergency Video
             </button>
           </div>
           <iframe 
@@ -644,12 +679,12 @@ export default function AIDiagnosticsTab({
                 setIsCameraActive(false);
                 isCameraActiveRef.current = false;
               }}
-              className="absolute top-6 right-6 p-3 text-slate-400 hover:text-white bg-neutral-900 border border-slate-700 rounded-full shadow-lg"
+              className="absolute top-6 right-6 p-3 text-red-400 hover:text-white bg-neutral-900 border border-neon-red/50 rounded-full shadow-[0_0_20px_rgba(255,51,102,0.4)]"
             >
               <X className="w-7 h-7" />
             </button>
             
-            <div className="relative w-full max-w-lg mx-auto aspect-video rounded-3xl border-2 border-slate-300 overflow-hidden shadow-[0_0_40px_rgba(226,232,240,0.3)] bg-black">
+            <div className="relative w-full max-w-lg mx-auto aspect-video rounded-3xl border-2 border-neon-red overflow-hidden shadow-[0_0_50px_rgba(255,51,102,0.5)] bg-black">
               <video 
                 ref={videoRef}
                 autoPlay
@@ -657,14 +692,14 @@ export default function AIDiagnosticsTab({
                 muted
                 className="w-full h-full object-cover transform scale-x-[-1]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col items-center justify-end pb-6 gap-3">
-                <p className="text-white font-medium text-base flex items-center gap-2 drop-shadow-md">
-                  <ThumbsUp className="w-5 h-5 text-slate-300 animate-pulse" /> 
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent flex flex-col items-center justify-end pb-6 gap-3">
+                <p className="text-white font-medium text-base flex items-center gap-2 drop-shadow-[0_0_10px_rgba(255,51,102,0.8)]">
+                  <ThumbsUp className="w-6 h-6 text-neon-red animate-pulse" /> 
                   Show Thumbs Up or click capture
                 </p>
                 <button
                   onClick={captureImageAndSend}
-                  className="px-6 py-2.5 rounded-full bg-slate-200 text-black font-bold text-sm hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.4)] transition-all flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-full bg-neon-red text-white font-bold text-sm hover:bg-neon-red-bright shadow-[0_0_25px_rgba(255,51,102,0.7)] transition-all flex items-center gap-2"
                 >
                   <Camera className="w-4 h-4" /> Snap Photo Now
                 </button>
@@ -677,15 +712,15 @@ export default function AIDiagnosticsTab({
       {/* Top Header Bar with Optional Hidden Controls */}
       <header className="w-full flex justify-between items-center z-20 max-w-5xl pt-6 px-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 drop-shadow-[0_0_15px_rgba(226,232,240,0.5)]">
+          <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-red-200 to-neon-red drop-shadow-[0_0_15px_rgba(255,51,102,0.7)]">
             ROBODOC
           </h1>
-          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800/80 text-slate-300 border border-slate-700">
+          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-950/60 text-red-300 border border-red-500/40">
             VitalLens AI
           </span>
         </div>
         
-        {/* Toggleable Action Buttons: Hidden by default, shown by clicking the eye toggle */}
+        {/* Toggleable Action Buttons (Hidden by default, shown via eye toggle) */}
         <div className="flex items-center gap-3">
           <AnimatePresence>
             {showNavControls && (
@@ -698,23 +733,23 @@ export default function AIDiagnosticsTab({
                 {/* Vault Button */}
                 <button
                   onClick={() => setActiveTab && setActiveTab("history")}
-                  className="px-3.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                  className="px-3.5 py-1.5 rounded-full bg-red-950/40 hover:bg-red-900/60 border border-neon-red/50 text-red-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(255,51,102,0.2)]"
                   title="Open Diagnosis Vault & Captured Photos"
                 >
-                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  <History className="w-3.5 h-3.5 text-neon-red" />
                   <span className="hidden sm:inline">Diagnosis Vault</span>
                 </button>
 
                 {/* User state / Sign in link */}
                 {user?.displayName && user.displayName !== "Guest User" ? (
-                  <div className="px-3 py-1.5 rounded-full bg-black/60 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                  <div className="px-3 py-1.5 rounded-full bg-black/60 border border-neon-red/40 text-xs font-medium text-white flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-neon-red shadow-[0_0_8px_#ff3366]" />
                     <span>{user.displayName}</span>
                   </div>
                 ) : (
                   <Link
                     href="/login"
-                    className="px-3 py-1.5 rounded-full bg-slate-200 hover:bg-white text-black text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(226,232,240,0.2)]"
+                    className="px-3 py-1.5 rounded-full bg-neon-red hover:bg-neon-red-bright text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_0_20px_rgba(255,51,102,0.5)]"
                   >
                     <LogIn className="w-3.5 h-3.5" />
                     <span>Sign In</span>
@@ -724,26 +759,26 @@ export default function AIDiagnosticsTab({
             )}
           </AnimatePresence>
 
-          {/* Toggle Visibility Button (Hides / Reveals Vault and Sign In) */}
+          {/* Toggle Visibility Button */}
           <button
             onClick={() => setShowNavControls(!showNavControls)}
-            className="p-2 rounded-full bg-neutral-900 border border-slate-700 text-slate-400 hover:text-white transition-all shadow-sm"
+            className="p-2 rounded-full bg-neutral-900/80 border border-red-900/60 text-red-400 hover:text-white hover:border-neon-red transition-all shadow-sm"
             title={showNavControls ? "Hide Sign In & Vault buttons" : "Show Sign In & Vault buttons"}
           >
-            {showNavControls ? <EyeOff className="w-4 h-4 text-slate-300" /> : <Eye className="w-4 h-4 text-slate-400" />}
+            {showNavControls ? <EyeOff className="w-4 h-4 text-neon-red" /> : <Eye className="w-4 h-4 text-red-400" />}
           </button>
 
           {/* Online/Offline status indicator */}
           <div className="flex items-center gap-2 pl-1">
-            <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAwake ? 'bg-slate-200 shadow-[0_0_10px_#fff] animate-pulse' : 'bg-slate-600'}`} />
-            <span className="text-xs uppercase tracking-widest font-semibold text-slate-400 hidden sm:inline">
+            <span className={`inline-block w-2.5 h-2.5 rounded-full ${isAwake ? 'bg-neon-red shadow-[0_0_10px_#ff3366] animate-pulse' : 'bg-red-950'}`} />
+            <span className="text-xs uppercase tracking-widest font-semibold text-red-300 hidden sm:inline">
               {isAwake ? "Online" : "Standby"}
             </span>
           </div>
         </div>
       </header>
 
-      {/* Centerpiece: Pure Neon Gray Living Eyes */}
+      {/* Centerpiece: Pure Neon Red Living Eyes */}
       <div className="flex-1 flex flex-col items-center justify-center my-auto w-full max-w-2xl px-4">
         <CuteNeonEyes 
           state={eyeState}
@@ -751,24 +786,32 @@ export default function AIDiagnosticsTab({
           statusText={statusSubtitle}
         />
 
-        {/* Quick Manual Camera Trigger */}
+        {/* Quick Manual Camera & Emergency Buttons */}
         <div className="mt-8 flex items-center gap-3">
           <button
             onClick={wakeUpRobodocAndLaunchCamera}
-            className="px-5 py-2.5 rounded-xl bg-neutral-900 border border-slate-700 hover:border-slate-400 text-slate-200 hover:text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(226,232,240,0.08)]"
+            className="px-5 py-2.5 rounded-xl bg-neutral-900 border border-neon-red/40 hover:border-neon-red text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(255,51,102,0.25)]"
           >
-            <Camera className="w-4 h-4 text-slate-300" />
+            <Camera className="w-4 h-4 text-neon-red" />
             <span>Open Camera</span>
+          </button>
+
+          <button
+            onClick={() => triggerEmergencyFlow("general")}
+            className="px-5 py-2.5 rounded-xl bg-red-950/60 border border-red-600/70 hover:bg-neon-red text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(255,51,102,0.3)]"
+          >
+            <ShieldAlert className="w-4 h-4 text-white" />
+            <span>Emergency</span>
           </button>
         </div>
       </div>
 
       {/* Bottom Command Guide */}
       <footer className="text-center pb-6 px-4">
-        <p className="text-xs tracking-wider text-slate-500 uppercase font-medium">
+        <p className="text-xs tracking-wider text-red-400/80 uppercase font-medium">
           {!isAwake 
-            ? 'Say "WakeUp Robodoc" to open camera • Tap eye icon top-right for Sign In / Vault' 
-            : 'Voice Commands: "Open Camera" • "Open Vault" • "Health Manager" • "Go to sleep"'}
+            ? 'Say "WakeUp Robodoc" or "Emergency" • Tap eye icon top-right for Sign In' 
+            : 'Voice Commands: "Open Camera" • "Emergency" • "Open Vault" • "Go to sleep"'}
         </p>
       </footer>
 

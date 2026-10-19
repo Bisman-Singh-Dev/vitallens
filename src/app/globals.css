@@ -1,35 +1,31 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-brand-100: #f1f5f9;
-  --color-brand-300: #cbd5e1;
-  --color-brand-500: #94a3b8;
-  --color-brand-700: #475569;
-  --color-brand-900: #1e293b;
+  --color-brand-100: #ffe4e6;
+  --color-brand-300: #fda4af;
+  --color-brand-500: #ff3366;
+  --color-brand-700: #e11d48;
+  --color-brand-900: #881337;
 
-  --color-neutral-dark: #121215;
-  --color-background: #070709;
-  --color-foreground: #f8fafc;
+  --color-neutral-dark: #09090b;
+  --color-background: #050507;
+  --color-foreground: #ffffff;
   
-  /* Neon Gray Theme */
-  --color-neon-gray: #e2e8f0;
-  --color-neon-gray-bright: #ffffff;
-  --color-neon-gray-dim: #94a3b8;
-  --color-neon-gray-glow: rgba(226, 232, 240, 0.55);
-
-  /* Remap any legacy neon-red tags to neon gray */
-  --color-neon-red: #e2e8f0;
-  --color-neon-red-glow: rgba(226, 232, 240, 0.5);
+  /* Vibrant Neon Red Theme */
+  --color-neon-red: #ff3366;
+  --color-neon-red-bright: #ff4d7d;
+  --color-neon-red-dim: #c71f49;
+  --color-neon-red-glow: rgba(255, 51, 102, 0.65);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 :root {
-  --background: #070709;
-  --foreground: #f8fafc;
-  --neon-gray: #e2e8f0;
-  --neon-gray-glow: 0 0 20px rgba(226, 232, 240, 0.5), 0 0 45px rgba(148, 163, 184, 0.3);
+  --background: #050507;
+  --foreground: #ffffff;
+  --neon-red: #ff3366;
+  --neon-red-glow: 0 0 25px rgba(255, 51, 102, 0.7), 0 0 50px rgba(255, 51, 102, 0.35);
 }
 
 body {
@@ -40,28 +36,28 @@ body {
   overflow-x: hidden;
 }
 
-/* Neon Gray Gradients & Effects */
+/* Neon Red Gradients & Glow Effects */
 .brand-gradient {
-  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #94a3b8 100%);
+  background: linear-gradient(135deg, #ff3366 0%, #e11d48 50%, #9f1239 100%);
 }
 
 .brand-gradient-text {
-  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #fda4af 40%, #ff3366 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.neon-gray-glow {
-  box-shadow: 0 0 20px rgba(226, 232, 240, 0.4), 0 0 40px rgba(148, 163, 184, 0.2);
+.neon-red-glow {
+  box-shadow: 0 0 25px rgba(255, 51, 102, 0.5), 0 0 50px rgba(255, 51, 102, 0.25);
 }
 
-.neon-gray-border {
-  border-color: rgba(226, 232, 240, 0.3);
+.neon-red-border {
+  border-color: rgba(255, 51, 102, 0.4);
 }
 
-.neon-gray-card {
-  background: rgba(18, 18, 22, 0.7);
-  border: 1px solid rgba(226, 232, 240, 0.15);
+.neon-red-card {
+  background: rgba(18, 10, 14, 0.85);
+  border: 1px solid rgba(255, 51, 102, 0.25);
   backdrop-filter: blur(16px);
 }

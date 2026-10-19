@@ -18,7 +18,6 @@ export default function CuteNeonEyes({
   statusText,
   className = ""
 }: CuteNeonEyesProps) {
-  // Random blink interval for natural lifelike feel
   const [blinkKey, setBlinkKey] = useState(0);
   const [glanceOffset, setGlanceOffset] = useState({ x: 0, y: 0 });
 
@@ -58,37 +57,34 @@ export default function CuteNeonEyes({
       onClick={onClick}
       className={`flex flex-col items-center justify-center select-none cursor-pointer transition-all duration-500 ${className}`}
     >
-      {/* Ambient Neon Gray Background Aura */}
+      {/* Ambient Neon Red Aura Glow */}
       <div className="relative flex items-center justify-center py-6 sm:py-10">
         <motion.div
           animate={{
-            scale: isDormant ? [0.95, 1.02, 0.95] : isListening ? [1.05, 1.18, 1.05] : isThinking ? [1, 1.1, 1] : isSpeaking ? [1.02, 1.12, 1.02] : [1, 1.04, 1],
-            opacity: isDormant ? [0.15, 0.25, 0.15] : isListening ? [0.4, 0.7, 0.4] : [0.25, 0.45, 0.25]
+            scale: isDormant ? [0.95, 1.02, 0.95] : isListening ? [1.05, 1.2, 1.05] : isThinking ? [1, 1.12, 1] : isSpeaking ? [1.02, 1.15, 1.02] : [1, 1.05, 1],
+            opacity: isDormant ? [0.2, 0.35, 0.2] : isListening ? [0.55, 0.9, 0.55] : [0.35, 0.65, 0.35]
           }}
           transition={{
             duration: isDormant ? 4 : isListening ? 1.5 : isThinking ? 1.2 : 2.5,
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute w-72 h-48 sm:w-96 sm:h-64 rounded-full pointer-events-none blur-3xl bg-slate-300/30"
+          className="absolute w-72 h-48 sm:w-96 sm:h-64 rounded-full pointer-events-none blur-3xl bg-red-600/30"
           style={{
             boxShadow: isDormant 
-              ? "0 0 60px rgba(148, 163, 184, 0.2)" 
-              : "0 0 100px rgba(226, 232, 240, 0.5), 0 0 160px rgba(148, 163, 184, 0.25)"
+              ? "0 0 70px rgba(255, 51, 102, 0.3)" 
+              : "0 0 110px rgba(255, 51, 102, 0.7), 0 0 180px rgba(225, 29, 72, 0.4)"
           }}
         />
 
-        {/* Outer Head Frame / Eyes Cluster */}
+        {/* Head / Eyes Cluster */}
         <div className="relative flex items-center justify-center gap-7 sm:gap-14 z-10">
-          {/* Left Eye */}
           <EyeUnit 
             side="left"
             state={state}
             blinkKey={blinkKey}
             glanceOffset={glanceOffset}
           />
-
-          {/* Right Eye */}
           <EyeUnit 
             side="right"
             state={state}
@@ -98,7 +94,7 @@ export default function CuteNeonEyes({
         </div>
       </div>
 
-      {/* Subtle Status Line (if any message to display) */}
+      {/* Status Line */}
       <AnimatePresence mode="wait">
         {statusText && (
           <motion.div
@@ -109,7 +105,7 @@ export default function CuteNeonEyes({
             transition={{ duration: 0.3 }}
             className="mt-6 text-center max-w-xl px-4"
           >
-            <p className="text-slate-300 font-medium text-sm sm:text-base tracking-wider drop-shadow-[0_0_12px_rgba(226,232,240,0.5)]">
+            <p className="text-red-300 font-semibold text-sm sm:text-base tracking-wider drop-shadow-[0_0_12px_rgba(255,51,102,0.8)]">
               {statusText}
             </p>
           </motion.div>
@@ -139,20 +135,19 @@ function EyeUnit({
   if (isDormant) {
     return (
       <div className="relative w-24 h-28 sm:w-36 sm:h-40 flex items-center justify-center">
-        {/* Sleeping Slit */}
         <motion.div
           animate={{
             scaleX: [0.85, 1, 0.85],
-            opacity: [0.35, 0.65, 0.35]
+            opacity: [0.45, 0.75, 0.45]
           }}
           transition={{
             duration: 3.2,
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="w-16 sm:w-24 h-2 sm:h-3 rounded-full bg-slate-400"
+          className="w-16 sm:w-24 h-2 sm:h-3 rounded-full bg-red-500"
           style={{
-            boxShadow: "0 0 15px rgba(226, 232, 240, 0.6), 0 0 30px rgba(148, 163, 184, 0.35)"
+            boxShadow: "0 0 20px rgba(255, 51, 102, 0.9), 0 0 40px rgba(255, 51, 102, 0.5)"
           }}
         />
       </div>
@@ -179,21 +174,20 @@ function EyeUnit({
       <motion.div
         animate={{
           borderColor: isListening 
-            ? "rgba(255, 255, 255, 0.95)" 
+            ? "rgba(255, 51, 102, 1)" 
             : isThinking 
-            ? "rgba(203, 213, 225, 0.85)" 
-            : "rgba(148, 163, 184, 0.7)",
+            ? "rgba(255, 77, 125, 0.95)" 
+            : "rgba(225, 29, 72, 0.8)",
           boxShadow: isListening
-            ? "0 0 25px rgba(255, 255, 255, 0.7), 0 0 50px rgba(226, 232, 240, 0.4), inset 0 0 25px rgba(226, 232, 240, 0.25)"
+            ? "0 0 35px rgba(255, 51, 102, 0.9), 0 0 65px rgba(255, 51, 102, 0.5), inset 0 0 25px rgba(255, 51, 102, 0.35)"
             : isThinking
-            ? "0 0 20px rgba(203, 213, 225, 0.5), 0 0 40px rgba(148, 163, 184, 0.3), inset 0 0 18px rgba(148, 163, 184, 0.2)"
-            : "0 0 18px rgba(226, 232, 240, 0.4), 0 0 35px rgba(148, 163, 184, 0.2), inset 0 0 15px rgba(226, 232, 240, 0.15)"
+            ? "0 0 25px rgba(255, 51, 102, 0.7), 0 0 50px rgba(255, 51, 102, 0.35), inset 0 0 20px rgba(255, 51, 102, 0.25)"
+            : "0 0 25px rgba(255, 51, 102, 0.6), 0 0 45px rgba(255, 51, 102, 0.3), inset 0 0 15px rgba(255, 51, 102, 0.2)"
         }}
         transition={{ duration: 0.4 }}
-        className="w-full h-full rounded-[38px] sm:rounded-[52px] border-[3px] sm:border-[4px] relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#141418] via-[#0d0d10] to-[#060608]"
+        className="w-full h-full rounded-[38px] sm:rounded-[52px] border-[3px] sm:border-[4px] relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-[#1a080d] via-[#100407] to-[#070103]"
       >
-        {/* Subtle Eyelid curve for cuteness */}
-        <div className="absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-slate-400/10 to-transparent pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-red-500/20 to-transparent pointer-events-none" />
 
         {/* Pupil & Specular Highlights */}
         <motion.div
@@ -221,20 +215,20 @@ function EyeUnit({
               ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
               : { duration: 0.5, ease: "easeOut" }
           }
-          className="relative w-12 h-16 sm:w-16 sm:h-24 rounded-[22px] sm:rounded-[32px] bg-gradient-to-b from-white via-slate-200 to-slate-400 flex items-center justify-center"
+          className="relative w-12 h-16 sm:w-16 sm:h-24 rounded-[22px] sm:rounded-[32px] bg-gradient-to-b from-white via-red-100 to-red-400 flex items-center justify-center"
           style={{
             boxShadow: isListening
-              ? "0 0 20px #ffffff, 0 0 45px rgba(226, 232, 240, 0.85)"
-              : "0 0 15px #ffffff, 0 0 32px rgba(203, 213, 225, 0.65)"
+              ? "0 0 25px #ffffff, 0 0 50px rgba(255, 51, 102, 0.95)"
+              : "0 0 20px #ffffff, 0 0 40px rgba(255, 51, 102, 0.75)"
           }}
         >
-          {/* Main Cute Specular Glint (Top Left) */}
+          {/* Main Cute Specular Glint */}
           <div className="absolute top-2.5 left-2 sm:top-3.5 sm:left-3 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
           
-          {/* Secondary Cute Twinkle (Bottom Right) */}
+          {/* Secondary Glint */}
           <div className="absolute bottom-2.5 right-2 sm:bottom-3 sm:right-3 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white opacity-90 shadow-[0_0_5px_#ffffff]" />
 
-          {/* Tertiary Micro Sparkle */}
+          {/* Tertiary Sparkle */}
           <div className="absolute top-7 left-5 sm:top-9 sm:left-6 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/80" />
         </motion.div>
       </motion.div>
