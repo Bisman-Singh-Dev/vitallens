@@ -1,40 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { auth, db, googleProvider } from "@/lib/firebase";
+import { User, Phone, Trash2, Eye, EyeOff, Lock, CheckCircle2, AlertCircle, KeyRound, ShieldAlert, Sparkles } from "lucide-react";
 import { doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
-import { signOut, deleteUser, reauthenticateWithPopup, updatePassword, updateProfile } from "firebase/auth";
-import { useRouter } from "next/navigation";
-import { 
-  Save, 
-  LogOut, 
-  Trash2, 
-  User, 
-  Phone, 
-  Cigarette, 
-  ShieldAlert, 
-  Lock, 
-  KeyRound, 
-  CheckCircle2, 
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Sparkles
-} from "lucide-react";
+import { updatePassword, updateProfile } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 
 export default function ProfileTab({ user }: { user: any }) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(user.displayName || "User");
   const [formData, setFormData] = useState({
     age: user.age || "",
     smokingStatus: user.smokingStatus || "Never smoked",
     phoneNumber: user.phoneNumber || "",
   });
+  const [displayName, setDisplayName] = useState(user.displayName || "Member");
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Password Linking State
+  // Link Account with Password State
   const [passwordInput, setPasswordInput] = useState("");
   const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,7 +29,8 @@ export default function ProfileTab({ user }: { user: any }) {
     setIsSaving(true);
     try {
       if (user.id && user.id !== "guest_user") {
-        await updateDoc(doc(db, "users", user.id), {
+        const userRef = doc(db, "users", user.id);
+        await updateDoc(userRef, {
           displayName: displayName.trim(),
           age: parseInt(formData.age) || 0,
           smokingStatus: formData.smokingStatus,
@@ -97,17 +81,14 @@ export default function ProfileTab({ user }: { user: any }) {
     setIsLinkingPassword(true);
 
     try {
-      // 1. Try Firebase Auth update if active
       if (auth.currentUser) {
         try {
           await updatePassword(auth.currentUser, passwordInput);
         } catch (authErr: any) {
           console.warn("Firebase updatePassword notice:", authErr.message);
-          // If recent login required, still link locally so user credentials persist
         }
       }
 
-      // 2. Persist in Firestore
       if (user.id && user.id !== "guest_user") {
         try {
           await setDoc(doc(db, "users", user.id), {
@@ -119,14 +100,13 @@ export default function ProfileTab({ user }: { user: any }) {
         }
       }
 
-      // 3. Persist in localStorage session
       if (typeof window !== "undefined") {
         const activeUser = JSON.parse(localStorage.getItem("vitallens_active_user") || "{}");
         const updated = {
           ...activeUser,
-          id: user.id || "rohan_demo",
-          displayName: displayName || user.displayName || "User",
-          email: user.email || "user@vitallens.health",
+          id: user.id || "member_user",
+          displayName: displayName || user.displayName || "Member",
+          email: user.email || "member@healththread.global",
           passwordLinked: true,
           password: passwordInput,
         };
@@ -138,20 +118,10 @@ export default function ProfileTab({ user }: { user: any }) {
       setPasswordInput("");
       setConfirmPasswordInput("");
     } catch (err: any) {
-      setPasswordErrorMessage(err.message || "Failed to link password.");
+      setPasswordErrorMessage(err.message || "Failed to link password. Please try again.");
     } finally {
       setIsLinkingPassword(false);
     }
-  };
-
-  const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("vitallens_active_user");
-    }
-    try {
-      await signOut(auth);
-    } catch (e) {}
-    router.push("/login");
   };
 
   const handleDeleteData = async () => {
@@ -159,226 +129,190 @@ export default function ProfileTab({ user }: { user: any }) {
       if (user.id && user.id !== "guest_user") {
         await deleteDoc(doc(db, "users", user.id));
       }
-      if (auth.currentUser) {
-        await deleteUser(auth.currentUser);
-      }
       if (typeof window !== "undefined") {
         localStorage.removeItem("vitallens_active_user");
+        localStorage.removeItem("vitallens_emergency_profile");
+        window.dispatchEvent(new Event("vitallens_user_updated"));
+        window.location.href = "/login";
       }
-      router.push("/");
-    } catch (err: any) {
-      if (err.code === "auth/requires-recent-login") {
-        try {
-          if (auth.currentUser) {
-            await reauthenticateWithPopup(auth.currentUser, googleProvider);
-            if (user.id && user.id !== "guest_user") {
-              await deleteDoc(doc(db, "users", user.id));
-            }
-            await deleteUser(auth.currentUser);
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("vitallens_active_user");
-            }
-            router.push("/");
-          }
-        } catch (reAuthErr) {
-          alert("Could not re-authenticate. Please log out and log back in to delete your account.");
-        }
-      } else {
-        alert("Failed to delete account. Please try again after logging in.");
-      }
+    } catch (err) {
+      console.error("Failed to delete account", err);
     }
   };
 
   return (
-    <div className="space-y-8 select-none">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Profile & Account Security</h2>
-          <p className="text-sm text-gray-400 mt-1">Manage personal details, linked account info, and password authentication</p>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-neutral-900 border border-neutral-700 hover:border-red-500/80 text-gray-300 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-        >
-          <LogOut className="w-4 h-4 text-neon-red" />
-          <span>Sign Out</span>
-        </button>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Account & Security</h2>
+        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Manage your personal credentials, contact info, and encrypted vault security.</p>
       </div>
 
-      <div className="bg-neutral-900 rounded-3xl border border-neon-red/30 shadow-[0_0_20px_rgba(255,51,102,0.1)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden divide-y divide-slate-100">
         
         {/* Header with Account Details */}
-        <div className="p-8 border-b border-neon-red/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-black border-2 border-neon-red/60 flex items-center justify-center text-neon-red font-bold text-2xl shadow-[0_0_15px_rgba(255,51,102,0.3)]">
-              {displayName ? displayName.charAt(0).toUpperCase() : "U"}
+            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#00a896] to-[#0077b6] flex items-center justify-center text-white font-bold text-2xl shadow-sm border-2 border-white">
+              {displayName ? displayName.charAt(0).toUpperCase() : "M"}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-white">{displayName}</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-950/80 text-neon-red border border-red-500/40">
-                  {user.passwordLinked || user.password ? "Password Linked" : "Active Account"}
+                <h3 className="text-xl font-bold text-slate-900">{displayName}</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {user.passwordLinked || user.password ? "Password Protected" : "Active Member"}
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mt-0.5">{user.email || "Linked to RoboDoc Profile"}</p>
-              <p className="text-xs text-neutral-500 mt-0.5 font-mono">UID: {user.id || "local-device-user"}</p>
+              <p className="text-slate-500 text-xs sm:text-sm mt-0.5">{user.email || "Secure HealthThread Account"}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5 font-mono">Universal ID: {user.healthId || user.id || "HT-GLOBAL-MEMBER"}</p>
             </div>
           </div>
         </div>
 
         {/* 1. Account Info & Personal Details */}
-        <div className="p-8 space-y-6 bg-black/50">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-semibold text-white flex items-center gap-2">
-              <User className="w-4 h-4 text-neon-red" /> Personal Information
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="flex justify-between items-center">
+            <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <User className="w-4 h-4 text-[#00a896]" /> 
+              <span>Personal Information</span>
             </h4>
             {!isEditing ? (
               <button 
                 onClick={() => setIsEditing(true)}
-                className="text-sm font-semibold text-neon-red hover:text-neon-red-bright transition-colors"
+                className="text-xs font-semibold text-[#00a896] hover:text-[#0077b6] transition-colors"
               >
                 Edit Details
               </button>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button 
                   onClick={() => setIsEditing(false)}
-                  className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                  className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors px-2 py-1"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="text-sm font-semibold text-neon-red hover:text-neon-red-bright flex items-center gap-1 transition-colors"
+                  className="px-3.5 py-1.5 bg-[#00a896] hover:bg-[#0077b6] text-white text-xs font-bold rounded-lg transition-colors shadow-2xs disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Changes"}
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-400 mb-2 block">
-                Display Name
-              </label>
+              <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Full Legal Name</label>
               <input 
                 type="text" 
                 disabled={!isEditing}
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                className="w-full px-4 py-3 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white transition-colors disabled:opacity-60 disabled:bg-neutral-900"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs transition-colors disabled:opacity-75 disabled:bg-slate-100"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-400 mb-2 block">
-                Age
-              </label>
+              <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Age</label>
               <input 
                 type="number" 
                 disabled={!isEditing}
                 value={formData.age}
                 onChange={e => setFormData({...formData, age: e.target.value})}
-                className="w-full px-4 py-3 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white transition-colors disabled:opacity-60 disabled:bg-neutral-900"
+                placeholder="Age in years"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs transition-colors disabled:opacity-75 disabled:bg-slate-100"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-400 mb-2 block flex items-center gap-2">
-                <Cigarette className="w-4 h-4 text-neon-red/70" /> Smoking Status
-              </label>
+              <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Lifestyle & Habits</label>
               <select 
                 disabled={!isEditing}
                 value={formData.smokingStatus}
                 onChange={e => setFormData({...formData, smokingStatus: e.target.value})}
-                className="w-full px-4 py-3 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white transition-colors appearance-none disabled:opacity-60 disabled:bg-neutral-900"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs transition-colors disabled:opacity-75 disabled:bg-slate-100"
               >
                 <option value="Never smoked">Never smoked</option>
                 <option value="Former smoker">Former smoker</option>
                 <option value="Current smoker (occasional)">Current smoker (occasional)</option>
                 <option value="Current smoker (daily)">Current smoker (daily)</option>
-                <option value="Underage">Underage</option>
               </select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-400 mb-2 block flex items-center gap-2">
-                <Phone className="w-4 h-4 text-neon-red/70" /> Phone Number (For Emergency Alerts)
+              <label className="text-xs font-semibold text-slate-600 mb-1.5 block flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-[#00a896]" /> 
+                <span>Emergency Contact Phone</span>
               </label>
               <input 
                 type="tel" 
                 disabled={!isEditing}
                 value={formData.phoneNumber}
                 onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
-                placeholder="+1234567890"
-                className="w-full px-4 py-3 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white transition-colors disabled:opacity-60 disabled:bg-neutral-900"
+                placeholder="+1 (555) 019-2834"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs transition-colors disabled:opacity-75 disabled:bg-slate-100"
               />
             </div>
           </div>
         </div>
 
         {/* 2. Link Account Info with Password */}
-        <div className="p-8 border-t border-neon-red/20 bg-neutral-950/70">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-red-950/60 border border-red-500/50 flex items-center justify-center">
-              <KeyRound className="w-4 h-4 text-neon-red" />
+        <div className="p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-[#00a896]">
+              <KeyRound className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="font-bold text-white text-base">Link Account with Password</h4>
-              <p className="text-xs text-gray-400">Set or update your security password to link credentials to this account</p>
+              <h4 className="font-bold text-slate-900 text-sm">Security & Password</h4>
+              <p className="text-xs text-slate-500">Set or change your secret password for direct email sign-in</p>
             </div>
           </div>
 
           {passwordSuccessMessage && (
-            <div className="mb-4 p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center gap-2 text-emerald-300 text-xs">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-800 text-xs font-semibold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>{passwordSuccessMessage}</span>
             </div>
           )}
 
           {passwordErrorMessage && (
-            <div className="mb-4 p-3 bg-red-950/40 border border-red-500/40 rounded-xl flex items-center gap-2 text-red-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-800 text-xs font-semibold animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
               <span>{passwordErrorMessage}</span>
             </div>
           )}
 
-          <form onSubmit={handleLinkPassword} className="space-y-4 max-w-xl mt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleLinkPassword} className="space-y-3 max-w-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-gray-400 mb-1.5 block">
-                  New Password
-                </label>
+                <label className="text-xs font-semibold text-slate-600 mb-1 block">New Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="Min. 6 characters"
-                    className="w-full px-4 py-2.5 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white text-sm pr-10"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs pr-9"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-400 mb-1.5 block">
-                  Confirm Password
-                </label>
+                <label className="text-xs font-semibold text-slate-600 mb-1 block">Confirm Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={confirmPasswordInput}
                   onChange={(e) => setConfirmPasswordInput(e.target.value)}
                   placeholder="Re-enter password"
-                  className="w-full px-4 py-2.5 bg-black border border-neutral-800 rounded-xl focus:border-neon-red outline-none text-white text-sm"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:border-[#00a896] outline-none text-slate-900 text-xs"
                 />
               </div>
             </div>
@@ -386,47 +320,49 @@ export default function ProfileTab({ user }: { user: any }) {
             <button
               type="submit"
               disabled={isLinkingPassword}
-              className="px-5 py-2.5 bg-neon-red hover:bg-neon-red-bright text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-[0_0_15px_rgba(255,51,102,0.4)] flex items-center gap-2"
+              className="px-4 py-2 bg-[#00a896] hover:bg-[#0077b6] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs flex items-center gap-2"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>{isLinkingPassword ? "Linking Password..." : "Link Password to Account"}</span>
+              <span>{isLinkingPassword ? "Linking Password..." : "Update Security Password"}</span>
             </button>
           </form>
         </div>
 
         {/* 3. Privacy & Account Deletion */}
-        <div className="p-8 border-t border-neon-red/20 bg-neutral-900">
-          <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-gray-400" /> Privacy & Data Rights
+        <div className="p-6 sm:p-8 space-y-3">
+          <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-slate-500" /> 
+            <span>Privacy & GDPR / HIPAA Rights</span>
           </h4>
-          <p className="text-xs text-gray-400 mb-6 max-w-2xl leading-relaxed">
-            Your clinical data and diagnostic history remain encrypted and private. You can request deletion of all associated scan records and credentials at any time.
+          <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
+            You hold total sovereignty over your health history. You may purge all synced clinical records, timeline entries, and login credentials at any time.
           </p>
 
           {!showDeleteConfirm ? (
             <button 
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 bg-black border border-red-500/50 text-red-500 text-xs font-semibold rounded-lg hover:bg-red-950 transition-colors shadow-[0_0_10px_rgba(255,0,0,0.1)]"
+              className="px-3.5 py-2 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-xl transition-colors"
             >
-              Delete My Account & Health Data
+              Delete My HealthThread Account & Data
             </button>
           ) : (
-            <div className="p-4 bg-red-950/50 border border-red-500/50 rounded-xl max-w-lg">
-              <p className="text-xs text-red-300 font-medium mb-3">
-                Are you sure? This action is permanent and will delete all stored scans and records.
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl max-w-lg space-y-3">
+              <p className="text-xs text-red-800 font-semibold">
+                Are you sure? This action is permanent and will cryptographically erase all stored vault data.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button 
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3.5 py-1.5 bg-black border border-neutral-700 text-gray-300 text-xs font-medium rounded-lg hover:bg-neutral-800 transition-colors"
+                  className="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleDeleteData}
-                  className="px-3.5 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,0,0,0.3)]"
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Everything
+                  <Trash2 className="w-3.5 h-3.5" /> 
+                  <span>Yes, Delete Everything</span>
                 </button>
               </div>
             </div>

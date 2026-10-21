@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         model: "openai/gpt-oss-120b",
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: "You are an elite medical AI analyst for RoboDoc. Provide highly professional, structured, and concise analysis of medical documents in JSON." },
+          { role: "system", content: "You are an elite medical AI analyst for Lumi and HealthThread. Provide highly professional, structured, and concise analysis of medical documents in JSON." },
           { role: "user", content: prompt }
         ],
         temperature: 0.3

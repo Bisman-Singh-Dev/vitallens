@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#ff3366",
+  themeColor: "#00a896",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -22,14 +22,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "VitalLens - AI Health & Disease Insight Platform",
-  description: "AI-powered diagnostic scans, personalized clinical plans, and habit tracking.",
+  title: "HealthThread — Your Health, Connected | Vault · Beacon · Lumi",
+  description: "A connected health experience. Vault health history, Beacon home health hub, and Lumi AI companion.",
   manifest: "/manifest.json",
-  applicationName: "VitalLens",
+  applicationName: "HealthThread",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "VitalLens",
+    title: "HealthThread",
   },
   icons: {
     icon: [
@@ -56,7 +56,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="VitalLens" />
+        <meta name="apple-mobile-web-app-title" content="HealthThread" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-brand-500 selection:text-white">
         <PwaRegister />

@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   
   // Immersive Fullscreen Device Mode (Hides all website elements, navbar, tabs, header)
-  const [isRoboDocFullscreen, setIsRoboDocFullscreen] = useState(false);
+  const [isLumiFullscreen, setIsLumiFullscreen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Sync account-specific user and emergency profile
@@ -170,23 +170,23 @@ export default function DashboardPage() {
     );
   }
 
-  // 1. FULLSCREEN IMMERSIVE ROBODOC VIEW (No website borders, no tabs, full screen display)
-  if (isRoboDocFullscreen) {
+  // 1. FULLSCREEN IMMERSIVE LUMI COMPANION VIEW (No website borders, no tabs, full screen display)
+  if (isLumiFullscreen) {
     return (
       <div className="fixed inset-0 z-50 w-screen h-screen bg-[#050507] text-white flex flex-col overflow-hidden select-none">
         {/* Floating Top Floating Bar to exit or toggle website tabs */}
         <div className="absolute top-4 right-5 z-50 flex items-center gap-2">
           <button
-            onClick={() => setIsRoboDocFullscreen(false)}
+            onClick={() => setIsLumiFullscreen(false)}
             className="px-3.5 py-1.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-white text-xs font-semibold border border-slate-700/80 backdrop-blur-md shadow-lg flex items-center gap-1.5 transition-all hover:scale-105"
             title="Exit Fullscreen Mode"
           >
-            <Minimize2 className="w-3.5 h-3.5 text-sky-400" />
+            <Minimize2 className="w-3.5 h-3.5 text-[#48cae4]" />
             <span>Show Website Tabs</span>
           </button>
           <button
             onClick={() => {
-              setIsRoboDocFullscreen(false);
+              setIsLumiFullscreen(false);
               setActiveTab("dashboard");
             }}
             className="p-1.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 text-slate-300 hover:text-white border border-slate-700/80 backdrop-blur-md shadow-lg transition-all"
@@ -196,12 +196,12 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* RoboDoc Multimodal Component occupying 100% of viewport */}
+        {/* Lumi Multimodal Component occupying 100% of viewport */}
         <div className="w-full h-full flex-1">
           <AIDiagnosticsTab 
             user={user} 
             setActiveTab={setActiveTab} 
-            onToggleFullscreen={() => setIsRoboDocFullscreen(false)}
+            onToggleFullscreen={() => setIsLumiFullscreen(false)}
             isFullscreen={true}
           />
         </div>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   setActiveTab("ai-diagnostics");
-                  setIsRoboDocFullscreen(true);
+                  setIsLumiFullscreen(true);
                 }}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-semibold shadow-xs transition-all border border-slate-700 hover:scale-105"
                 title="Make Screen Fully Lumi AI Kiosk (Hide Website Tabs)"
@@ -542,29 +542,29 @@ export default function DashboardPage() {
                   />
                 )}
 
-                {/* RoboDoc AI Diagnostics with dedicated full screen option */}
+                {/* Lumi AI Health Companion with dedicated full screen kiosk option */}
                 {activeTab === "ai-diagnostics" && (
                   <div className="space-y-4">
-                    <div className="p-4 bg-slate-900 rounded-2xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 bg-slate-900 rounded-2xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-800 shadow-xs">
                       <div>
                         <h3 className="text-sm font-bold flex items-center gap-2">
-                          <span>RoboDoc Multimodal AI Doctor</span>
+                          <span className="text-[#48cae4]">Lumi — Multimodal AI Health Companion</span>
                           <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full">
                             Voice & Vision Active
                           </span>
                         </h3>
                         <p className="text-xs text-slate-300 mt-0.5">
-                          Voice-interactive clinical symptom analysis, heart rate scan, and gesture recognition.
+                          Voice-interactive clinical symptom analysis, heart rate scan, and gesture recognition inside Beacon & Vault.
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         <button
-                          onClick={() => setIsRoboDocFullscreen(true)}
-                          className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
+                          onClick={() => setIsLumiFullscreen(true)}
+                          className="px-4 py-2 rounded-xl bg-[#00a896] hover:bg-[#0077b6] text-white font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
                         >
                           <Maximize2 className="w-3.5 h-3.5" />
-                          <span>Make Screen Fully Robot (Hide Tabs)</span>
+                          <span>Make Screen Fully Lumi (Hide Tabs)</span>
                         </button>
                         <button
                           onClick={() => setActiveTab("dashboard")}
@@ -579,7 +579,7 @@ export default function DashboardPage() {
                       <AIDiagnosticsTab 
                         user={user} 
                         setActiveTab={setActiveTab} 
-                        onToggleFullscreen={() => setIsRoboDocFullscreen(true)}
+                        onToggleFullscreen={() => setIsLumiFullscreen(true)}
                         isFullscreen={false}
                       />
                     </div>
@@ -587,13 +587,11 @@ export default function DashboardPage() {
                 )}
 
                 {activeTab === "document-analysis" && (
-                  <div className="bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-800 text-white shadow-sm">
-                    <DocumentAnalysisTab user={user} />
-                  </div>
+                  <DocumentAnalysisTab user={user} />
                 )}
 
                 {activeTab === "health-manager" && (
-                  <div className="bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-800 text-white shadow-sm">
+                  <div className="rounded-2xl overflow-hidden border border-slate-800 shadow-xl bg-[#070709] min-h-[600px]">
                     <HealthManagerTab user={user} setActiveTab={setActiveTab} />
                   </div>
                 )}

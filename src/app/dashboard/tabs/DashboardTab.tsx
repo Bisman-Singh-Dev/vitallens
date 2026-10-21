@@ -50,7 +50,7 @@ export default function DashboardTab({ user, setActiveTab, emergencyProfile }: D
   }, []);
 
   const patientName = activeUser?.displayName || "Patient";
-  const healthId = activeUser?.healthId || activeUser?.ekycDetails?.abhaNumber || "ABHA Pending";
+  const healthId = activeUser?.healthId || "HT-GLOBAL-PENDING";
   const phoneNumber = activeUser?.phoneNumber || "Not provided";
   const bloodGroup = activeProfile?.bloodGroup || activeUser?.bloodGroup || "Not specified";
 
@@ -254,7 +254,7 @@ export default function DashboardTab({ user, setActiveTab, emergencyProfile }: D
         >
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold text-sky-200 uppercase tracking-wider mb-2">
-              <Sparkles className="w-3 h-3 text-sky-300" /> VitalLens RoboDoc AI
+              <Sparkles className="w-3 h-3 text-sky-300" /> HealthThread Lumi AI
             </div>
             <h3 className="text-base font-bold text-white group-hover:text-sky-200 transition-colors">
               AI Voice & Camera Vitals Scan

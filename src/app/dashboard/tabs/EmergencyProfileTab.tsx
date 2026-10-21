@@ -265,8 +265,8 @@ export default function EmergencyProfileTab({ user }: { user?: any }) {
                   type="text" 
                   value={editForm.previousSurgeries}
                   onChange={(e) => setEditForm({ ...editForm, previousSurgeries: e.target.value })}
-                  placeholder="e.g. Appendectomy (2005)"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600 text-slate-900"
+                  placeholder="e.g. None or Appendectomy (2018)"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#00a896] text-slate-900"
                 />
               </div>
 
@@ -276,8 +276,8 @@ export default function EmergencyProfileTab({ user }: { user?: any }) {
                   type="text" 
                   value={editForm.emergencyContact}
                   onChange={(e) => setEditForm({ ...editForm, emergencyContact: e.target.value })}
-                  placeholder="e.g. Name (Relation) · +91 98xxx xxxxx"
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600 text-slate-900"
+                  placeholder="e.g. Jane Doe (Spouse) · +1 (555) 019-2834"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#00a896] text-slate-900"
                 />
               </div>
             </div>
@@ -292,7 +292,7 @@ export default function EmergencyProfileTab({ user }: { user?: any }) {
               </button>
               <button 
                 type="submit" 
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#0d3859] hover:bg-[#0a2d48] rounded-lg flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#00a896] hover:bg-[#0077b6] rounded-lg flex items-center gap-1.5 transition-colors shadow-2xs"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Save Profile</span>

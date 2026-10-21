@@ -31,63 +31,64 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
   const doctors = [
     {
       id: "doc-1",
-      name: "Dr. Neha Verma — General Physician",
+      name: "Dr. Sarah Mitchell, MD — General Physician",
       status: "Available now · Video consultation",
       availableNow: true,
       specialty: "General Medicine & Internal Health",
-      hospital: "Apollo Telehealth",
-      photo: "NV"
+      hospital: "HealthThread Global Clinical Network",
+      photo: "SM"
     },
     {
       id: "doc-2",
-      name: "Dr. Arvind Rao — Cardiologist",
-      status: "Available in 12 min · Video consultation",
+      name: "Dr. Marcus Vance, MD — Cardiologist",
+      status: "Available in 10 min · Video consultation",
       availableNow: false,
-      specialty: "Interventional Cardiology",
-      hospital: "Fortis Escorts Heart Institute",
-      photo: "AR"
+      specialty: "Cardiovascular Health & Diagnostics",
+      hospital: "University Cardiovascular Center",
+      photo: "MV"
     },
     {
       id: "doc-3",
-      name: "Dr. Priya Nair — Obstetrician & Gynecologist",
+      name: "Dr. Elena Rostova, MD — Obstetrician & Gynecologist",
       status: "Available now · Video consultation",
       availableNow: true,
-      specialty: "Maternal Health & Obstetrics",
-      hospital: "Max Healthcare",
-      photo: "PN"
+      specialty: "Maternal Health & Fetal Medicine",
+      hospital: "Metropolitan Women's Health Institute",
+      photo: "ER"
     }
   ];
 
   const hospitals = [
     {
       id: "hosp-1",
-      name: "Apollo Hospitals",
-      detail: "1.8 km away · Emergency ward open 24×7",
-      phone: "+91 11 2692 5858",
+      name: "St. Jude Metropolitan Medical Center",
+      detail: "1.8 km away · Emergency casualty open 24×7",
+      phone: "+1 (800) 555-0199",
       emergencyUnit: "24x7 Level 1 Trauma & Cardiac Care"
     },
     {
       id: "hosp-2",
-      name: "Fortis Escorts Heart Institute",
-      detail: "3.2 km away · Cardiac emergency unit",
-      phone: "+91 11 4713 5000",
+      name: "University Hospital & Heart Institute",
+      detail: "3.2 km away · Comprehensive acute care",
+      phone: "+1 (800) 555-0182",
       emergencyUnit: "Rapid Response Cardiac Intervention"
     },
     {
       id: "hosp-3",
-      name: "AIIMS New Delhi",
-      detail: "4.5 km away · Apex Trauma Center",
-      phone: "+91 11 2658 8500",
-      emergencyUnit: "Central Government Emergency Trauma"
+      name: "Memorial General Hospital & Trauma Network",
+      detail: "4.5 km away · Regional Apex Trauma Center",
+      phone: "+1 (800) 555-0144",
+      emergencyUnit: "Apex Level 1 Comprehensive Trauma Desk"
     }
   ];
 
   const handleStartCall = (doc: any) => {
     setActiveCallDoctor(doc);
     setCallConnected(false);
+    const memberName = user?.displayName || "there";
     setChatMessages([
       `System: Encrypted end-to-end clinical consultation room opened with ${doc.name}.`,
-      `${doc.name}: Hello Aradhya, I have reviewed your digital health vault and emergency profile. How can I help you today?`
+      `${doc.name}: Hello ${memberName}, I have your encrypted HealthThread Vault open. How are you feeling today?`
     ]);
     setTimeout(() => {
       setCallConnected(true);
@@ -117,12 +118,14 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
     }, 1600);
   };
 
+  const memberDisplayName = user?.displayName || "Member";
+  const memberFirstName = user?.displayName ? user.displayName.split(" ")[0] : "Member";
+
   return (
     <div className="space-y-6">
       
-      {/* URGENT RED EMERGENCY BANNER (Image 5) */}
+      {/* URGENT RED EMERGENCY BANNER */}
       <div className="bg-[#991b1b] rounded-2xl p-6 sm:p-7 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
-        {/* Subtle radial glow */}
         <div className="absolute right-0 top-0 -mr-10 -mt-10 w-60 h-60 rounded-full bg-white/[0.04] pointer-events-none" />
 
         <div className="space-y-1 relative z-10">
@@ -130,7 +133,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
             Need urgent medical help?
           </h2>
           <p className="text-xs sm:text-sm text-red-100">
-            Share your emergency profile instantly with the nearest responder.
+            Share your emergency profile instantly with the nearest responder and international triage.
           </p>
         </div>
 
@@ -145,14 +148,14 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
         </div>
       </div>
 
-      {/* TALK TO A DOCTOR NOW SECTION (Image 5) */}
+      {/* TALK TO A DOCTOR NOW SECTION */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-base font-bold text-slate-900">
             Talk to a Doctor Now
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Instant on-demand verified consultations with licensed physicians and specialists.
+            Instant on-demand verified consultations with licensed physicians and specialists worldwide.
           </p>
         </div>
 
@@ -163,7 +166,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:bg-slate-50/70 -mx-3 px-3 rounded-xl transition-all"
             >
               <div className="space-y-0.5 min-w-0">
-                <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#00a896] transition-colors">
                   {doc.name}
                 </h4>
                 <p className="text-xs text-slate-500 flex items-center gap-2">
@@ -174,7 +177,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               <div className="shrink-0 flex items-center gap-3">
                 <button
                   onClick={() => handleStartCall(doc)}
-                  className="px-4 py-2 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-all shadow-2xs hover:shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-[#00a896] hover:bg-[#0077b6] text-white text-xs font-bold transition-all shadow-2xs hover:shadow-sm flex items-center gap-1.5"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Start Call</span>
@@ -185,11 +188,11 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
         </div>
       </div>
 
-      {/* NEARBY HOSPITALS SECTION (Image 5) */}
+      {/* NEARBY HOSPITALS SECTION */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-base font-bold text-slate-900">
-            Nearby Hospitals
+            Nearby Hospitals & Medical Centers
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             Direct 24/7 hotline to emergency casualty triage and trauma desks.
@@ -203,7 +206,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:bg-slate-50/70 -mx-3 px-3 rounded-xl transition-all"
             >
               <div className="space-y-0.5 min-w-0">
-                <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#00a896] transition-colors">
                   {hosp.name}
                 </h4>
                 <p className="text-xs text-slate-500">
@@ -213,15 +216,15 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
 
               <div className="shrink-0 flex items-center gap-3">
                 <a
-                  href={`tel:${hosp.phone.replace(/\s+/g, '')}`}
+                  href={`tel:${hosp.phone.replace(/[^0-9+]/g, '')}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    alert(`Dialing 24x7 ER hotline: ${hosp.name} (${hosp.phone})\nEmergency unit alerted with your Digital Health ID.`);
+                    alert(`Dialing 24x7 ER hotline: ${hosp.name} (${hosp.phone})\nEmergency unit notified with your Universal Health ID.`);
                   }}
-                  className="px-4 py-2 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-all shadow-2xs hover:shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-[#0077b6] hover:bg-[#053d52] text-white text-xs font-bold transition-all shadow-2xs hover:shadow-sm flex items-center gap-1.5"
                 >
                   <Phone className="w-3.5 h-3.5 fill-current" />
-                  <span>Call</span>
+                  <span>Call Hotline</span>
                 </a>
               </div>
             </div>
@@ -237,7 +240,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
             {/* Header */}
             <div className="p-4 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-xs font-bold text-white">
+                <div className="w-8 h-8 rounded-full bg-[#00a896] flex items-center justify-center text-xs font-bold text-white">
                   {activeCallDoctor.photo}
                 </div>
                 <div>
@@ -262,13 +265,13 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               <div className="md:col-span-2 bg-slate-950 p-4 flex flex-col items-center justify-center relative min-h-[260px] sm:min-h-[360px]">
                 {!callConnected ? (
                   <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+                    <div className="w-12 h-12 rounded-full border-4 border-[#00a896] border-t-transparent animate-spin" />
                     <p className="text-xs text-slate-300 font-medium">Connecting encrypted audio/video peer stream...</p>
                   </div>
                 ) : (
                   <div className="w-full h-full rounded-xl bg-slate-900 border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden">
                     <div className="text-center p-6 space-y-2">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 mx-auto flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-white/20">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#00a896] to-[#0077b6] mx-auto flex items-center justify-center text-2xl font-bold text-white shadow-lg border-2 border-white/20">
                         {activeCallDoctor.photo}
                       </div>
                       <h4 className="font-bold text-white text-base">{activeCallDoctor.name}</h4>
@@ -280,8 +283,8 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
 
                     {/* Self view pip */}
                     <div className="absolute bottom-4 right-4 w-32 h-24 rounded-lg bg-black/80 border border-slate-700 flex flex-col items-center justify-center p-2 text-center shadow-lg">
-                      <p className="text-[10px] font-bold text-slate-400">You (Aradhya)</p>
-                      <p className="text-[9px] text-emerald-400">eKYC Verified</p>
+                      <p className="text-[10px] font-bold text-slate-300">You ({memberFirstName})</p>
+                      <p className="text-[9px] text-[#48cae4]">Vault Connected</p>
                     </div>
                   </div>
                 )}
@@ -308,11 +311,11 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
                     placeholder="Describe symptoms or query..." 
                     value={newChatText}
                     onChange={(e) => setNewChatText(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-[#00a896]"
                   />
                   <button 
                     type="submit" 
-                    className="p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white"
+                    className="p-2 bg-[#00a896] hover:bg-[#0077b6] rounded-lg text-white"
                   >
                     <Send className="w-3.5 h-3.5" />
                   </button>
@@ -344,9 +347,9 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
 
               <button 
                 onClick={() => {
-                  alert("Digital e-Prescription generated and verified! Added to your Lifelong Timeline.");
+                  alert("Digital e-Prescription generated and verified! Added dynamically to your HealthThread Vault.");
                 }}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-[#0077b6] hover:bg-[#00a896] text-white font-semibold text-xs flex items-center gap-1.5 transition-colors"
               >
                 <FilePlus className="w-4 h-4" />
                 <span>Issue e-Prescription</span>
@@ -381,7 +384,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               </div>
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">
-                  National ER Dispatch 108 / 112
+                  International Emergency Dispatch 911 / 112
                 </span>
                 <h3 className="text-lg font-bold text-slate-900">
                   Emergency Responder Alert
@@ -397,19 +400,19 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
               <div>
                 <span className="text-slate-500 block text-[10px] uppercase font-bold">Patient Transmitted Data</span>
                 <span className="font-semibold text-slate-800">
-                  Aradhya Tripathi | Blood: B+ Pos | Allergy: Penicillin
+                  {memberDisplayName} | Blood: {emergencyProfile?.bloodGroup || "Not specified"} | Allergy: {emergencyProfile?.knownAllergies || "None declared"}
                 </span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[10px] uppercase font-bold">Emergency Contact Notified</span>
                 <span className="font-semibold text-slate-800">
-                  Anita Kumar (Spouse) · SMS & GPS link delivered
+                  {emergencyProfile?.emergencyContact || "Registered Primary Contact"} · SMS & GPS link delivered
                 </span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Nearest Responding Hospital</span>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Nearest Responding Medical Center</span>
                 <span className="font-semibold text-slate-800">
-                  Apollo Hospitals Trauma Unit (1.8 km) · ETA 4 mins
+                  St. Jude Metropolitan Trauma Unit (1.8 km) · ETA 4 mins
                 </span>
               </div>
             </div>
@@ -422,15 +425,15 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
                 Dismiss
               </button>
               <a
-                href="tel:112"
+                href="tel:911"
                 onClick={(e) => {
                   e.preventDefault();
-                  alert("Connecting direct dial to Emergency Helpline 112...");
+                  alert("Connecting direct dial to Universal Emergency Helpline (911 / 112)...");
                 }}
                 className="w-full py-2.5 bg-[#991b1b] hover:bg-red-800 text-white text-xs font-bold rounded-lg transition-colors text-center flex items-center justify-center gap-1.5"
               >
                 <Phone className="w-3.5 h-3.5" />
-                <span>Call 112 Now</span>
+                <span>Call Emergency Now</span>
               </a>
             </div>
           </div>

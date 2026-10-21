@@ -137,7 +137,7 @@ export default function AIDiagnosticsTab({
     setInput("");
 
     // Start speaking greeting immediately
-    playDirectTTS("Hello! RoboDoc is awake. Opening camera now. Show thumbs up to capture.");
+    playDirectTTS("Hello! Lumi is awake. Opening camera now. Show thumbs up to capture.");
 
     // Open camera
     isCameraActiveRef.current = true;
@@ -237,7 +237,7 @@ export default function AIDiagnosticsTab({
         const voiceUser = {
           id: detectedName.toLowerCase() + "_user",
           displayName: detectedName,
-          email: `${detectedName.toLowerCase()}@vitallens.health`,
+          email: `${detectedName.toLowerCase()}@healththread.global`,
           isVoiceLoggedIn: true,
           onboardingComplete: true
         };
@@ -255,16 +255,14 @@ export default function AIDiagnosticsTab({
 
     // 3. WAKE WORD: Speaks out loud AND opens camera
     const isWakeWord = 
+      clean.includes("wakeup lumi") ||
+      clean.includes("wake up lumi") ||
+      clean.includes("hey lumi") ||
+      clean.includes("lumi") ||
       clean.includes("wakeup robodoc") ||
       clean.includes("wake up robodoc") ||
-      clean.includes("wake up robo doc") ||
-      clean.includes("wakeup robo doc") ||
-      clean.includes("wake up robot") ||
-      clean.includes("wakeup robot") ||
       clean.includes("wake up") ||
-      clean.includes("wakeup") ||
-      clean.includes("robot doc") ||
-      clean.includes("robodoc");
+      clean.includes("wakeup");
 
     if (isWakeWord && !isCameraActiveRef.current) {
       wakeUpRobodocAndLaunchCamera();
@@ -277,8 +275,8 @@ export default function AIDiagnosticsTab({
     setInput(transcript);
 
     // Sleep command
-    if (clean.includes("go to sleep") || clean.includes("sleep robodoc") || clean.includes("bye robodoc") || clean.includes("shut down")) {
-      playDirectTTS("Going to sleep. Say WakeUp Robodoc whenever you need me.", () => {
+    if (clean.includes("go to sleep") || clean.includes("sleep lumi") || clean.includes("bye lumi") || clean.includes("sleep robodoc") || clean.includes("bye robodoc") || clean.includes("shut down")) {
+      playDirectTTS("Going to sleep. Say WakeUp Lumi whenever you need me.", () => {
         setIsAwake(false);
         isAwakeRef.current = false;
         setInput("");
@@ -563,7 +561,7 @@ export default function AIDiagnosticsTab({
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const data = await res.json();
-          responseToSpeak = data.response || "Hey! I am RoboDoc. According to my Diagnosis, your visual biomarkers look normal.";
+          responseToSpeak = data.response || "Hey! I am Lumi. According to my Diagnosis, your visual biomarkers look normal.";
         } else {
           const reader = res.body?.getReader();
           const decoder = new TextDecoder("utf-8");
@@ -601,11 +599,11 @@ export default function AIDiagnosticsTab({
           }
         }
       } else {
-        responseToSpeak = "Hey! I am RoboDoc. I am right here with you. Please show me the condition or tell me more.";
+        responseToSpeak = "Hey! I am Lumi. I am right here with you. Please show me the condition or tell me more.";
       }
 
       if (!responseToSpeak.trim()) {
-        responseToSpeak = "Hey! I am RoboDoc. How can I assist you with your health today?";
+        responseToSpeak = "Hey! I am Lumi. How can I assist you with your health today?";
       }
 
       // Check for emergency redirect
@@ -631,7 +629,7 @@ export default function AIDiagnosticsTab({
       
     } catch (err: any) {
       console.error("Chat error:", err);
-      const fallbackResponse = "Hey! I am RoboDoc. I am listening and right here with you.";
+      const fallbackResponse = "Hey! I am Lumi. I am listening and right here with you.";
       playDirectTTS(fallbackResponse);
     } finally {
       setIsLoading(false);
@@ -878,7 +876,7 @@ export default function AIDiagnosticsTab({
       <footer className="text-center pb-6 px-4">
         <p className="text-xs tracking-wider text-red-400/80 uppercase font-medium">
           {!isAwake 
-            ? 'Say "WakeUp Robodoc" or "Emergency" • Tap eye icon top-right for Sign In' 
+            ? 'Say "WakeUp Lumi" or "Emergency" • Tap eye icon top-right for Sign In' 
             : 'Voice Commands: "Open Camera" • "Emergency" • "Open Vault" • "Go to sleep"'}
         </p>
       </footer>

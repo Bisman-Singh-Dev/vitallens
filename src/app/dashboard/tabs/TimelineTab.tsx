@@ -388,13 +388,13 @@ export default function TimelineTab({ setActiveTab }: { setActiveTab?: (tab: str
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Hospital / Clinic / Doctor</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Hospital / Clinic / Specialist</label>
               <input 
                 type="text" 
-                placeholder="e.g. Max Healthcare · Dr. Sharma" 
+                placeholder="e.g. Metropolitan Medical Center · Dr. Sarah Mitchell" 
                 value={newProvider}
                 onChange={(e) => setNewProvider(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600 text-slate-900"
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#00a896] text-slate-900"
               />
             </div>
 
@@ -405,7 +405,7 @@ export default function TimelineTab({ setActiveTab }: { setActiveTab?: (tab: str
                 placeholder="Observations, dosage, or summary notes..." 
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-600 text-slate-900"
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#00a896] text-slate-900"
               />
             </div>
 
@@ -419,7 +419,7 @@ export default function TimelineTab({ setActiveTab }: { setActiveTab?: (tab: str
               </button>
               <button 
                 type="submit" 
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#0d3859] hover:bg-[#0a2d48] rounded-lg"
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#00a896] hover:bg-[#0077b6] rounded-lg transition-colors shadow-2xs"
               >
                 Save to Timeline
               </button>

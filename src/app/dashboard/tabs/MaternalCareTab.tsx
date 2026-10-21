@@ -24,7 +24,7 @@ export default function MaternalCareTab({ setActiveTab }: { setActiveTab?: (tab:
   const checkups = [
     {
       title: "Second Trimester Anomaly Scan",
-      doctor: "Dr. Priya Nair (Obstetrics & Fetal Medicine)",
+      doctor: "Dr. Elena Rostova (Obstetrics & Fetal Medicine)",
       date: "28 Oct 2026",
       status: "Upcoming in 7 days",
       notes: "High-resolution Doppler evaluation of fetal anatomy & amniotic fluid index."
@@ -59,7 +59,7 @@ export default function MaternalCareTab({ setActiveTab }: { setActiveTab?: (tab:
             Maternal & Infant Health Vault
           </h2>
           <p className="text-xs sm:text-sm text-pink-100/90 max-w-xl">
-            National Maternal & Child Health (RMNCHA+) record integration. Seamless prenatal screening, fetal biometry, and neonatal immunization schedules.
+            International Maternal & Child Health (WHO / ACOG) guidelines integration. Seamless prenatal screening, fetal biometry, and neonatal immunization schedules.
           </p>
         </div>
 

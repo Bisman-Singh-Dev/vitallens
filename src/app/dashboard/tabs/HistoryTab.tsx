@@ -193,7 +193,7 @@ export default function HistoryTab({ onClose }: { onClose?: () => void }) {
           </div>
           <h3 className="text-xl font-bold text-slate-200 mb-2">No Diagnoses Stored Yet</h3>
           <p className="text-sm text-slate-400 max-w-md leading-relaxed">
-            When you say "WakeUp Robodoc" or open the camera to snap a symptom photo, your diagnosis and picture will be saved here automatically.
+            When you say "WakeUp Lumi" or open the camera to snap a symptom photo, your clinical examination and picture will be saved here automatically.
           </p>
         </div>
       ) : (

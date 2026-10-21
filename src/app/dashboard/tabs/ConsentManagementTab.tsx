@@ -149,61 +149,71 @@ export default function ConsentManagementTab() {
           </p>
         </div>
 
-        <div className="divide-y divide-slate-100">
-          {consents.filter((c) => c.status !== "PENDING").map((item) => (
-            <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-slate-900">{item.requester}</h4>
-                  {item.status === "ACTIVE" ? (
-                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-0.2 rounded-full">
-                      Revoked
-                    </span>
+        {consents.filter((c) => c.status !== "PENDING").length === 0 ? (
+          <div className="py-10 text-center text-slate-500 space-y-2">
+            <Lock className="w-8 h-8 text-[#00a896] mx-auto opacity-75" />
+            <h4 className="text-sm font-bold text-slate-800">No Active Third-Party Consents</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Your HealthThread Vault is completely private. Whenever a hospital, physician, or clinic requests read access, their permission token will appear here for your review and authorization.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {consents.filter((c) => c.status !== "PENDING").map((item) => (
+              <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-900">{item.requester}</h4>
+                    {item.status === "ACTIVE" ? (
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.2 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-0.2 rounded-full">
+                        Revoked
+                      </span>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-slate-500">{item.type} · Valid until: {item.validUntil}</p>
+
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[11px] text-slate-400 font-medium mr-1">Permitted Scopes:</span>
+                    {item.scope.map((s, i) => (
+                      <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  {item.lastAccessed && (
+                    <p className="text-[11px] text-slate-400 pt-0.5">
+                      Last audit trace: {item.lastAccessed}
+                    </p>
                   )}
                 </div>
-                
-                <p className="text-xs text-slate-500">{item.type} · Valid until: {item.validUntil}</p>
 
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[11px] text-slate-400 font-medium mr-1">Permitted Scopes:</span>
-                  {item.scope.map((s, i) => (
-                    <span key={i} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                      {s}
-                    </span>
-                  ))}
+                <div className="shrink-0">
+                  {item.status === "ACTIVE" ? (
+                    <button
+                      onClick={() => handleRevoke(item.id, item.requester)}
+                      className="px-3.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors"
+                    >
+                      Revoke Access
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApprove(item.id, item.requester)}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors"
+                    >
+                      Re-authorize
+                    </button>
+                  )}
                 </div>
-
-                {item.lastAccessed && (
-                  <p className="text-[11px] text-slate-400 pt-0.5">
-                    Last audit trace: {item.lastAccessed}
-                  </p>
-                )}
               </div>
-
-              <div className="shrink-0">
-                {item.status === "ACTIVE" ? (
-                  <button
-                    onClick={() => handleRevoke(item.id, item.requester)}
-                    className="px-3.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors"
-                  >
-                    Revoke Access
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleApprove(item.id, item.requester)}
-                    className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition-colors"
-                  >
-                    Re-authorize
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

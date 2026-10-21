@@ -27,7 +27,7 @@ export default function WearablesFeaturePage() {
           </div>
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Wearable Sync</h1>
           <p className="text-xl text-gray-400 font-light max-w-2xl mb-12 leading-relaxed">
-            Take your health tracking further with the RoboDoc Band. Seamlessly sync your daily vitals to complement your AI eye-scan insights.
+            Take your health tracking further with Beacon — Your Home Health Hub. Seamlessly sync your daily vitals to complement your HealthThread Vault and Lumi companion insights.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
@@ -52,9 +52,9 @@ export default function WearablesFeaturePage() {
             </div>
 
             <div className="bg-gradient-to-br from-brand-900/50 to-black border border-brand-500/30 p-8 rounded-2xl backdrop-blur-sm flex flex-col justify-center">
-              <h3 className="text-2xl font-bold mb-4 text-white">Pre-Order the Band</h3>
+              <h3 className="text-2xl font-bold mb-4 text-white">Beacon Home Health Hub</h3>
               <p className="text-gray-400 font-light mb-8">
-                The RoboDoc Band is currently available for pre-order through the dashboard store. Log in to reserve yours today.
+                Beacon is available at home, on your phone, and on your laptop to link live physiological metrics into Vault.
               </p>
               <Link href="/login">
                 <button className="px-8 py-4 bg-brand-500 hover:bg-brand-400 text-white font-bold uppercase tracking-widest rounded-md shadow-[0_0_20px_rgba(200,30,58,0.4)] w-full transition-all">

@@ -18,11 +18,11 @@ export async function POST(req: Request) {
       const base64Data = buffer.toString('base64');
       const mimeType = image.type || "image/jpeg";
 
-      const prompt = `You are RoboDoc, an elite medical AI analyst. 
+      const prompt = `You are Lumi, the proactive multimodal AI health companion inside HealthThread. 
       The user has uploaded a photo. Carefully analyze the image for any visible health indicators or symptoms (e.g. rashes, redness, cuts, burns). 
       You MUST respond using exactly the following format and nothing else. Talk naturally, use commas where appropriate, and do not sound robotic:
 
-      Hey! I am RoboDoc.
+      Hey! I am Lumi.
       According to my Diagnosis,
       <<Disease/Infection/Cut Name>>: [Include a brief 1-2 sentence description of what you see and what it likely is].
       
@@ -34,10 +34,9 @@ export async function POST(req: Request) {
       
       What kind of doctor you should see: [Specify the specialist or medical professional].
       
-      Emergency Contact: In case of severe emergencies, please dial 911 (US), 112 (Europe), or 108 (India) immediately.
+      Emergency Contact: In case of severe emergencies, please dial 911 (North America) or 112 (Europe/International) immediately.
 
-      Language Requirement: 
-      ${language === "hi" ? "YOU MUST GENERATE THE ENTIRE RESPONSE IN FLUENT HINDI (Devanagari script). DO NOT USE ENGLISH." : "Generate the response in English."}
+      Language: Generate the response in English unless requested otherwise.
 
       CRITICAL EMERGENCY RULE: If the condition is an emergency (such as a severe burn, deep cut, choking, or cardiac arrest), you MUST output a brief 1-sentence warning, followed immediately by ONE of the exact EMERGENCY_REDIRECT links below:
       For Cuts or Bruises:
@@ -99,7 +98,7 @@ export async function POST(req: Request) {
 
       if (!geminiRes || !geminiRes.ok) {
         // Safe clinical fallback for vision so user NEVER gets broken experience
-        const fallbackDiagnosis = `Hey! I am RoboDoc.\nAccording to my Diagnosis,\n<<Visible Clinical & Diagnostic Scan>>: I have reviewed the image and noted mild surface redness or irritation.\n\nHow to treat this disease:\n* Clean the affected area gently with warm water and mild soap.\n* Apply a cool sterile compress if swelling or irritation is present.\n* Avoid scratching or touching the area directly.\n* Monitor for any changes in color, sensation, or warmth.\n\nWhat kind of doctor you should see: Dermatologist or General Physician.\n\nEmergency Contact: In case of severe emergencies, please dial 911 (US), 112 (Europe), or 108 (India) immediately.`;
+        const fallbackDiagnosis = `Hey! I am Lumi, your Health Companion.\nAccording to my Diagnosis,\n<<Visible Clinical & Diagnostic Scan>>: I have reviewed the image and noted mild surface redness or irritation.\n\nRecommended Care:\n* Clean the affected area gently with warm water and mild soap.\n* Apply a cool sterile compress if swelling or irritation is present.\n* Avoid scratching or touching the area directly.\n* Monitor for any changes in color, sensation, or warmth.\n\nRecommended Specialist: Dermatologist or General Physician.\n\nEmergency Guidance: In case of acute or life-threatening symptoms, immediately dial 911 (North America), 112 (Europe/International), or your nearest emergency medical center.`;
         return NextResponse.json({ response: fallbackDiagnosis }, { status: 200 });
       }
       
@@ -113,7 +112,7 @@ export async function POST(req: Request) {
 
     } else {
       // Text chat: Ultra-fast Groq with automatic model cascade (llama-3.3-70b-versatile -> llama-3.1-8b-instant)
-      const systemPrompt = "You are RoboDoc, an elite AI health assistant. Keep your responses short, crisp, and to the point (2 to 4 sentences). Provide helpful, clear clinical guidance without long disclaimers. Always answer clearly and empathetically.";
+      const systemPrompt = "You are Lumi, the proactive AI health companion inside HealthThread. Keep your responses short, crisp, and to the point (2 to 4 sentences). Provide helpful, clear clinical guidance without long disclaimers. Always answer clearly, warmly, and empathetically.";
 
       const candidateModels = [
         "llama-3.3-70b-versatile",
