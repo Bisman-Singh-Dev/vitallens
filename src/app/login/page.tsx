@@ -42,21 +42,22 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    const cleanName = fullName.trim() || (role === "doctor" ? "Dr. Rajesh Sharma" : "Aradhya Tripathi");
+    const accountId = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
     const activeUser = {
-      id: role === "doctor" ? "dr_rajesh_sharma" : "aradhya_tripathi",
-      displayName: fullName.trim() || (role === "doctor" ? "Dr. Rajesh Sharma" : "Aradhya Tripathi"),
-      email: role === "doctor" ? "rajesh.sharma@apollohospitals.com" : "aradhya.tripathi@healthvault.in",
-      healthId: "HT-2026-88231",
+      id: accountId,
+      displayName: cleanName,
+      email: `${accountId}@healthvault.in`,
+      healthId: `HT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
       phoneNumber: mobileNumber,
-      bloodGroup: "B+",
+      bloodGroup: role === "doctor" ? "A+" : "B+",
       role: role,
       isVerified: true
     };
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("vitallens_active_user", JSON.stringify(activeUser));
-      window.dispatchEvent(new Event("vitallens_user_updated"));
-    }
+    const { setActiveUser } = await import("@/lib/vaultStore");
+    await setActiveUser(activeUser);
 
     setTimeout(() => {
       setIsLoading(false);
@@ -64,7 +65,8 @@ export default function LoginPage() {
     }, 400);
   };
 
-  const handleSelectDemo = (demoType: "patient" | "doctor") => {
+  const handleSelectDemo = async (demoType: "patient" | "doctor") => {
+    const { setActiveUser } = await import("@/lib/vaultStore");
     if (demoType === "patient") {
       setRole("patient");
       setFullName("Shashank Kumar");
@@ -76,13 +78,10 @@ export default function LoginPage() {
         healthId: "HT-2026-44102",
         phoneNumber: "+91 98112 33445",
         bloodGroup: "O+",
-        role: "patient",
+        role: "patient" as const,
         isVerified: true
       };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
-        window.dispatchEvent(new Event("vitallens_user_updated"));
-      }
+      await setActiveUser(userObj);
       router.push("/dashboard");
     } else {
       setRole("doctor");
@@ -95,13 +94,10 @@ export default function LoginPage() {
         healthId: "HP-99214-ABDM",
         phoneNumber: "+91 98100 12345",
         bloodGroup: "A+",
-        role: "doctor",
+        role: "doctor" as const,
         isVerified: true
       };
-      if (typeof window !== "undefined") {
-        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
-        window.dispatchEvent(new Event("vitallens_user_updated"));
-      }
+      await setActiveUser(userObj);
       router.push("/dashboard");
     }
   };
@@ -115,20 +111,18 @@ export default function LoginPage() {
 
       const userObj = {
         id: user.uid,
-        displayName: user.displayName || "Aradhya Tripathi",
-        email: user.email,
-        photoURL: user.photoURL,
-        healthId: "HT-2026-88231",
+        displayName: user.displayName || "Google Health User",
+        email: user.email || "user@google.com",
+        photoURL: user.photoURL || undefined,
+        healthId: `HT-2026-${Math.floor(10000 + Math.random() * 90000)}`,
         phoneNumber: "+91 98765 43210",
-        bloodGroup: "B+",
-        role: "patient",
+        bloodGroup: "Not set",
+        role: "patient" as const,
         isVerified: true
       };
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
-        window.dispatchEvent(new Event("vitallens_user_updated"));
-      }
+      const { setActiveUser } = await import("@/lib/vaultStore");
+      await setActiveUser(userObj);
       router.push("/dashboard");
     } catch (err: any) {
       console.warn("Google sign-in popup bypassed; logging in directly for demo:", err);
