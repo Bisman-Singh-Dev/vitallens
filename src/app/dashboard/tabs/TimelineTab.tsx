@@ -288,7 +288,7 @@ export default function TimelineTab({ setActiveTab }: { setActiveTab?: (tab: str
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">Verification Status</span>
                 <span className={selectedEvent.status === "Verified" ? "text-emerald-700 font-semibold" : "text-amber-700 font-semibold"}>
-                  {selectedEvent.status} by ABDM Clinical Registry
+                  {selectedEvent.status} by HealthThread Global Registry
                 </span>
               </div>
               {selectedEvent.notes && (

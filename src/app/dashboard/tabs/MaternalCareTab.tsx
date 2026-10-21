@@ -31,14 +31,14 @@ export default function MaternalCareTab({ setActiveTab }: { setActiveTab?: (tab:
     },
     {
       title: "Maternal Blood Glucose Tolerance (OGTT)",
-      doctor: "Apollo Diagnostics Lab",
+      doctor: "Global Diagnostics Clinical Laboratory",
       date: "04 Nov 2026",
       status: "Scheduled",
       notes: "Fasting 75g oral glucose screening for gestational diabetes."
     },
     {
       title: "First Trimester Nuchal Translucency (NT) Scan",
-      doctor: "Dr. Priya Nair · Max Healthcare",
+      doctor: "Dr. Evelyn Reed · Women's Health Clinic",
       date: "14 Aug 2026",
       status: "Completed & Normal",
       notes: "NT 1.2mm, nasal bone present. Low risk screen."

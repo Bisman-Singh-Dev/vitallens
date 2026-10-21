@@ -185,7 +185,7 @@ export default function EmergencyProfileTab({ user }: { user?: any }) {
       <div className="p-4 bg-sky-50/70 border border-sky-100 rounded-2xl flex items-start gap-3">
         <UserCheck className="w-5 h-5 text-sky-700 shrink-0 mt-0.5" />
         <div className="text-xs text-sky-900 leading-relaxed">
-          <strong className="font-semibold text-sky-950">ABDM Emergency Bypass Protocol:</strong> In life-threatening emergencies, authorized paramedics and ER doctors can scan your patient QR code or biometric NFC band to view this critical medical profile without waiting for 2-factor OTP.
+          <strong className="font-semibold text-sky-950">Universal Emergency Bypass Protocol:</strong> In life-threatening emergencies, authorized paramedics and ER doctors can scan your patient QR code or biometric NFC band to view this critical medical profile without waiting for 2-factor authentication.
         </div>
       </div>
 

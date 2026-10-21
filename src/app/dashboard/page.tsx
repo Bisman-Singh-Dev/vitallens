@@ -21,9 +21,10 @@ import {
   Menu,
   X,
   SidebarClose,
-  SidebarOpen
+  SidebarOpen,
+  Sparkles
 } from "lucide-react";
-import { HealthThreadLogo, TricolorBar } from "@/components/HealthThreadLogo";
+import { HealthThreadLogo, BrandAccentBar } from "@/components/HealthThreadLogo";
 import DashboardTab from "./tabs/DashboardTab";
 import TimelineTab from "./tabs/TimelineTab";
 import EmergencyProfileTab from "./tabs/EmergencyProfileTab";
@@ -137,16 +138,16 @@ export default function DashboardPage() {
 
   const getPageTitle = () => {
     switch (activeTab) {
-      case "dashboard": return "Dashboard";
-      case "timeline": return "Lifelong Timeline";
-      case "emergency": return "Emergency Profile";
-      case "consent": return "Consent Management";
-      case "telemedicine": return "Telemedicine & Emergency Access";
-      case "maternal": return "Maternal Care";
-      case "doctor-portal": return "Doctor Portal & Clinical Staff";
-      case "ai-diagnostics": return "AI Voice & Camera Doctor (RoboDoc)";
-      case "document-analysis": return "Document Analysis & OCR";
-      case "health-manager": return "Health Manager & Alarms";
+      case "dashboard": return "Vault Overview";
+      case "timeline": return "Lifelong Health Timeline";
+      case "emergency": return "Emergency Medical Profile";
+      case "consent": return "Consent & Privacy Controls";
+      case "telemedicine": return "Telehealth & Emergency SOS";
+      case "maternal": return "Family & Maternal Health";
+      case "doctor-portal": return "Physician Clinical Portal";
+      case "ai-diagnostics": return "Lumi AI Health Companion";
+      case "document-analysis": return "Document & Lab OCR";
+      case "health-manager": return "Smart Health Alarms";
       case "profile": return "Account Settings";
       default: return "HealthThread Vault";
     }
@@ -211,21 +212,21 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col select-none">
       
-      {/* 1. TOP TRICOLOR BAR (Left Saffron, Right Green) */}
-      <TricolorBar />
+      {/* 1. TOP BRAND ACCENT BAR */}
+      <BrandAccentBar />
 
       <div className="flex-1 flex overflow-hidden">
         
         {/* 2. LEFT SIDEBAR */}
         {!sidebarCollapsed && (
           <aside className={`
-            fixed inset-y-0 left-0 z-40 w-64 bg-[#0e3c5d] text-white flex flex-col transition-transform duration-200 ease-in-out md:translate-x-0 md:static shrink-0
+            fixed inset-y-0 left-0 z-40 w-64 bg-[#053d52] text-white flex flex-col transition-transform duration-200 ease-in-out md:translate-x-0 md:static shrink-0 shadow-lg
             ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
           `}>
             
             {/* Top Brand Logo Section */}
-            <div className="p-5 pb-6 border-b border-[#164e75]/60 flex items-center justify-between">
-              <HealthThreadLogo />
+            <div className="p-5 pb-6 border-b border-[#0e5c7b]/60 flex items-center justify-between">
+              <HealthThreadLogo isDark={true} />
               <button 
                 onClick={() => setMobileMenuOpen(false)}
                 className="md:hidden text-slate-300 hover:text-white"
@@ -234,30 +235,37 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Navigation Items (Clean & Understandable) */}
+            {/* Navigation Items (Vault, Beacon, Lumi Pillars) */}
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 text-xs font-semibold">
               
+              {/* VAULT: YOUR HEALTH HISTORY */}
+              <div className="pt-2 pb-1.5 px-3">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#48cae4]">
+                  Vault · Health History
+                </span>
+              </div>
+
               <button
                 onClick={() => { setActiveTab("dashboard"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "dashboard"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4 text-sky-300" />
-                <span>Dashboard</span>
+                <LayoutDashboard className="w-4 h-4 text-[#48cae4]" />
+                <span>Vault Overview</span>
               </button>
 
               <button
                 onClick={() => { setActiveTab("timeline"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "timeline"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
-                <History className="w-4 h-4 text-amber-300" />
+                <History className="w-4 h-4 text-[#38bdf8]" />
                 <span>Lifelong Timeline</span>
               </button>
 
@@ -265,30 +273,30 @@ export default function DashboardPage() {
                 onClick={() => { setActiveTab("emergency"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "emergency"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <ShieldAlert className="w-4 h-4 text-cyan-300" />
-                <span>Emergency Profile</span>
+                <span>Emergency Card</span>
               </button>
 
               <button
                 onClick={() => { setActiveTab("consent"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "consent"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <Lock className="w-4 h-4 text-emerald-300" />
-                <span>Consent Management</span>
+                <span>Privacy & Consents</span>
               </button>
 
-              {/* CARE SERVICES CATEGORY */}
+              {/* BEACON: CONNECTED CARE ECOSYSTEM */}
               <div className="pt-4 pb-1.5 px-3">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-sky-300/60">
-                  Care Services
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#48cae4]">
+                  Beacon · Connected Care
                 </span>
               </div>
 
@@ -296,30 +304,30 @@ export default function DashboardPage() {
                 onClick={() => { setActiveTab("telemedicine"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "telemedicine"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <Stethoscope className="w-4 h-4 text-pink-300" />
-                <span>Telemedicine & ER</span>
+                <span>Telehealth & SOS</span>
               </button>
 
               <button
                 onClick={() => { setActiveTab("maternal"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "maternal"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <Baby className="w-4 h-4 text-amber-300" />
-                <span>Maternal Care</span>
+                <span>Family & Maternal Health</span>
               </button>
 
-              {/* CLINICAL AI CATEGORY */}
+              {/* LUMI: AI HEALTH COMPANION */}
               <div className="pt-4 pb-1.5 px-3">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-sky-300/60">
-                  Clinical AI Doctor
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#48cae4]">
+                  Lumi · AI Companion
                 </span>
               </div>
 
@@ -327,20 +335,20 @@ export default function DashboardPage() {
                 onClick={() => { setActiveTab("ai-diagnostics"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "ai-diagnostics"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
-                <Bot className="w-4 h-4 text-purple-300" />
-                <span>AI Voice & Camera Doctor</span>
+                <Bot className="w-4 h-4 text-sky-200" />
+                <span>Lumi AI Doctor (Voice & Vision)</span>
               </button>
 
               <button
                 onClick={() => { setActiveTab("document-analysis"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "document-analysis"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <FileText className="w-4 h-4 text-blue-300" />
@@ -351,26 +359,26 @@ export default function DashboardPage() {
                 onClick={() => { setActiveTab("health-manager"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   activeTab === "health-manager"
-                    ? "bg-[#164e75] text-white shadow-xs font-bold"
-                    : "text-slate-300 hover:bg-[#134468] hover:text-white"
+                    ? "bg-[#00a896] text-white shadow-xs font-bold"
+                    : "text-slate-200 hover:bg-[#084c66] hover:text-white"
                 }`}
               >
                 <Bell className="w-4 h-4 text-yellow-300" />
-                <span>Health Manager & Alarms</span>
+                <span>Smart Health Alarms</span>
               </button>
 
             </nav>
 
             {/* Bottom Sidebar Action Buttons */}
-            <div className="p-3.5 border-t border-[#164e75]/60 space-y-2 mt-auto">
+            <div className="p-3.5 border-t border-[#0e5c7b]/60 space-y-2 mt-auto">
               <button
                 onClick={() => {
                   setActiveTab(activeTab === "doctor-portal" ? "dashboard" : "doctor-portal");
                   setMobileMenuOpen(false);
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-[#134468]/70 hover:bg-[#134468] text-[11px] font-semibold text-sky-100 flex items-center justify-center gap-2 transition-all border border-[#1b5886]"
+                className="w-full py-2 px-3 rounded-xl bg-[#084c66]/70 hover:bg-[#084c66] text-[11px] font-semibold text-sky-100 flex items-center justify-center gap-2 transition-all border border-[#0d6689]"
               >
-                <span>... Switch to {activeTab === "doctor-portal" ? "Patient Vault" : "Doctor Portal"}</span>
+                <span>... Switch to {activeTab === "doctor-portal" ? "Patient Vault" : "Physician Portal"}</span>
               </button>
 
               <button
@@ -378,7 +386,7 @@ export default function DashboardPage() {
                 className="w-full py-1.5 px-3 rounded-lg text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-2 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Log out</span>
+                <span>Sign out</span>
               </button>
             </div>
           </aside>
@@ -415,30 +423,34 @@ export default function DashboardPage() {
             {/* Top Right Badges & Fullscreen Action */}
             <div className="flex items-center gap-2.5 relative">
               
-              {/* Fullscreen Button for RoboDoc Device Mode (Hide Tabs) */}
+              {/* Fullscreen Button for Lumi AI Companion Kiosk (Hide Tabs) */}
               <button
                 onClick={() => {
                   setActiveTab("ai-diagnostics");
                   setIsRoboDocFullscreen(true);
                 }}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-semibold shadow-xs transition-all border border-slate-700 hover:scale-105"
-                title="Make Screen Fully Robot View (Hide Website Tabs)"
+                title="Make Screen Fully Lumi AI Kiosk (Hide Website Tabs)"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-                <span>Robot Screen (Hide Tabs)</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#48cae4] animate-pulse" />
+                <span>Lumi Screen (Hide Tabs)</span>
               </button>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] text-[#047857] text-xs font-semibold shadow-2xs">
-                <span>✓ eKYC Verified</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-2xs">
+                <span>✓ HIPAA & GDPR Secured</span>
               </div>
 
               {/* Avatar circle */}
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="w-8 h-8 rounded-full bg-[#0e3c5d] hover:bg-[#0a2d48] text-white flex items-center justify-center text-xs font-bold shadow-xs transition-colors"
+                className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00a896] to-[#0077b6] text-white flex items-center justify-center text-xs font-bold shadow-xs transition-transform hover:scale-105 overflow-hidden"
                 title="Account Menu"
               >
-                {getInitials(user?.displayName)}
+                {user?.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(user?.displayName)
+                )}
               </button>
 
               {/* User Dropdown */}

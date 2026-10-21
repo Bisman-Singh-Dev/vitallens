@@ -650,11 +650,11 @@ export default function AIDiagnosticsTab({
     : "awake";
 
   const statusSubtitle = !isAwake
-    ? 'Say "WakeUp Robodoc" or "Emergency"'
+    ? 'Say "WakeUp Lumi" or "Emergency"'
     : isLoading
-    ? "Analyzing condition..."
+    ? "Analyzing condition with Lumi AI..."
     : isTTSPlaying
-    ? "RoboDoc is speaking..."
+    ? "Lumi is speaking..."
     : input
     ? `"${input}"`
     : "Listening to your voice...";
@@ -759,11 +759,11 @@ export default function AIDiagnosticsTab({
       {/* Top Header Bar with Optional Hidden Controls */}
       <header className="w-full flex justify-between items-center z-20 max-w-5xl pt-6 px-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-red-200 to-neon-red drop-shadow-[0_0_15px_rgba(255,51,102,0.7)]">
-            ROBODOC
+          <h1 className="text-xl sm:text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-[#48cae4] drop-shadow-[0_0_15px_rgba(72,202,228,0.7)]">
+            LUMI
           </h1>
-          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-950/60 text-red-300 border border-red-500/40">
-            VitalLens AI
+          <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-950/60 text-[#48cae4] border border-[#00b4d8]/40">
+            Health Companion
           </span>
         </div>
         

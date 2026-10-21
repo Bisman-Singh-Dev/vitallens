@@ -9,510 +9,314 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Lock, 
-  Smartphone, 
-  FileText,
   Sparkles,
   Building2,
-  KeyRound,
-  AlertCircle
+  Globe2,
+  FileText,
+  Radio,
+  Bot
 } from "lucide-react";
-import { HealthThreadLogo } from "@/components/HealthThreadLogo";
-import { 
-  setActiveUser, 
-  generateAndSendOtp, 
-  verifyOtp, 
-  VaultUser, 
-  GovernmentEKYC 
-} from "@/lib/vaultStore";
+import { HealthThreadLogo, BrandAccentBar } from "@/components/HealthThreadLogo";
+import { signInWithGoogleAuth, createFreshAccount } from "@/lib/vaultStore";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  // Role Tab: "patient" vs "doctor"
+  // Role: "patient" vs "doctor"
   const [role, setRole] = useState<"patient" | "doctor">("patient");
 
-  // Sub Tab: "ekyc" vs "otp"
-  const [authMethod, setAuthMethod] = useState<"ekyc" | "otp">("ekyc");
-
-  // Form Fields (Empty by default — no hardcoded names or seeds)
+  // Form Fields (Clean & un-hardcoded)
   const [fullName, setFullName] = useState("");
-  const [identityNumber, setIdentityNumber] = useState("");
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [nmcNumber, setNmcNumber] = useState("");
-  const [hospitalAffiliation, setHospitalAffiliation] = useState("");
-
-  // OTP Verification state
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [sentOtpDisplay, setSentOtpDisplay] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [organization, setOrganization] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Step 1: Send Government OTP via Firebase
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!fullName.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-
-    const identifier = role === "doctor"
-      ? (mobileNumber.trim() || nmcNumber.trim())
-      : (authMethod === "ekyc" ? identityNumber.trim() : mobileNumber.trim());
-
-    if (!identifier) {
-      setError(
-        role === "doctor" 
-          ? "Please provide your Mobile Number and NMC Registration Number." 
-          : (authMethod === "ekyc" ? "Please enter your 14-digit ABHA or 12-digit Aadhaar number." : "Please enter your 10-digit mobile number.")
-      );
-      return;
-    }
-
+  // 1. Google Sign-In (Firebase Auth)
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
+    setError("");
     try {
-      const res = await generateAndSendOtp(identifier);
-      setSentOtpDisplay(res.code);
-      setOtpSent(true);
+      await signInWithGoogleAuth(role);
+      router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.message || "Failed to generate government OTP. Please try again.");
-    } finally {
+      console.warn("Google popup error:", err);
+      // If popup was closed by user or cancelled, show friendly message
+      if (err?.code !== "auth/popup-closed-by-user") {
+        setError(err?.message || "Google sign-in could not be completed. You can also sign in with your name below.");
+      }
       setIsLoading(false);
     }
   };
 
-  // Step 2: Verify OTP via Firebase and create fresh account
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  // 2. Direct Instant Account Creation / Login (No OTP, No eKYC)
+  const handleDirectSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!otpCode.trim()) {
-      setError("Please enter the 6-digit OTP code received.");
+    if (!fullName.trim()) {
+      setError("Please enter your name.");
       return;
     }
 
-    const identifier = role === "doctor"
-      ? (mobileNumber.trim() || nmcNumber.trim())
-      : (authMethod === "ekyc" ? identityNumber.trim() : mobileNumber.trim());
-
     setIsLoading(true);
     try {
-      const result = await verifyOtp(identifier, otpCode.trim());
-      if (!result.success) {
-        setError(result.error || "Invalid OTP code. Please check and re-enter.");
-        setIsLoading(false);
-        return;
-      }
-
-      // Generate clean account ID from user's actual entered name
-      const cleanName = fullName.trim();
-      const accountId = "usr_" + cleanName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 24) + "_" + Math.floor(1000 + Math.random() * 9000);
-
-      // Construct official Government eKYC details
-      const cleanIdDigits = identifier.replace(/[^0-9]/g, "");
-      const formattedAbha = cleanIdDigits.length >= 10
-        ? `91-${cleanIdDigits.slice(0, 4)}-${cleanIdDigits.slice(4, 8)}-${cleanIdDigits.slice(8, 12) || "4401"}`
-        : `91-4210-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-      const ekycDetails: GovernmentEKYC = {
-        abhaNumber: formattedAbha,
-        abhaAddress: `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "")}@abdm`,
-        aadhaarLinked: true,
-        verificationStatus: "VERIFIED",
-        verifiedAt: new Date().toISOString(),
-        authority: "National Health Authority (NHA) · MoHFW",
-        documentType: role === "doctor" ? "Doctor NMC Registry" : (authMethod === "ekyc" ? "Aadhaar eKYC" : "ABHA Health Card")
-      };
-
-      const newUser: VaultUser = {
-        id: accountId,
-        displayName: cleanName,
-        email: `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "")}@healthvault.in`,
-        healthId: formattedAbha,
-        phoneNumber: mobileNumber.trim() || "+91 98765 43210",
-        bloodGroup: "Not specified",
-        role: role,
-        isVerified: true,
-        nmcNumber: role === "doctor" ? nmcNumber.trim() : undefined,
-        hospitalAffiliation: role === "doctor" ? (hospitalAffiliation.trim() || "National Health Network") : undefined,
-        ekycDetails
-      };
-
-      // Save user to Firestore & Local Session
-      await setActiveUser(newUser);
-
-      // Redirect immediately to clean, fresh dashboard
+      await createFreshAccount(fullName, email, role, organization);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.message || "Verification failed. Please retry.");
+      setError(err?.message || "Failed to sign in. Please try again.");
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen w-full flex items-center justify-center bg-[#07243c] p-3 sm:p-6 md:p-10 select-none">
+    <main className="min-h-screen w-full flex flex-col justify-between bg-[#f0f9ff]/60 select-none">
       
-      {/* CARD CONTAINER (Dual-Pane National Vault Design) */}
-      <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-slate-700/50 min-h-[640px]">
+      {/* Top Brand Accent Gradient Line */}
+      <BrandAccentBar />
+
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-6 md:p-10">
         
-        {/* LEFT PANE: BRAND & OFFICIAL GOVERNMENT MISSION DETAILS */}
-        <div className="bg-[#0b2d49] text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+        {/* CARD CONTAINER: Modern Light-Mode Sleek Dual Pane */}
+        <div className="max-w-5xl w-full bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 border border-slate-200/90 min-h-[620px]">
           
-          {/* Subtle concentric security rays */}
-          <div className="absolute -bottom-20 -left-20 w-[420px] h-[420px] rounded-full border border-sky-400/10 pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-[320px] h-[320px] rounded-full border border-sky-400/10 pointer-events-none" />
-          <div className="absolute bottom-10 left-10 w-[200px] h-[200px] rounded-full border border-sky-400/10 pointer-events-none" />
+          {/* LEFT PANE: BRAND ECOSYSTEM (Teal / Ocean Gradient) */}
+          <div className="md:col-span-5 bg-gradient-to-br from-[#05668d] via-[#028090] to-[#00a896] text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
+            
+            {/* Ambient Graphic Elements */}
+            <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="absolute top-10 -right-16 w-60 h-60 rounded-full bg-[#48cae4]/20 blur-xl pointer-events-none" />
 
-          {/* Top Brand & Ministry Line */}
-          <div className="relative z-10 space-y-3">
-            <div className="flex items-center gap-3">
-              <HealthThreadLogo showText={false} className="w-11 h-11" />
-              <div>
-                <h2 className="text-xl font-bold tracking-tight text-white leading-tight">
-                  HealthThread
-                </h2>
-                <p className="text-[10px] text-sky-200/90 font-medium tracking-wide">
-                  National Digital Health Records Vault
-                </p>
-                <p className="text-[9px] text-sky-300/70 font-normal">
-                  Ministry of Health & Family Welfare · Ayushman Bharat Digital Mission (ABDM)
+            <div className="relative z-10 space-y-4">
+              <HealthThreadLogo isDark={true} />
+              
+              <div className="pt-2">
+                <span className="text-[10px] font-bold tracking-widest text-[#48cae4] uppercase block">
+                  Connected Health Ecosystem
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1 leading-tight">
+                  A seamless flow<br />for better health.
+                </h1>
+                <p className="text-xs text-sky-100/90 leading-relaxed mt-2.5">
+                  Your medical records, your AI companion, and your connected devices — working together as one unified system.
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* Center Hero Heading & Subtitle */}
-          <div className="relative z-10 my-10 space-y-4">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.18]">
-              One health record.<br />Every hospital. For life.
-            </h1>
-            <p className="text-xs sm:text-sm text-sky-100/85 leading-relaxed max-w-sm">
-              Your lifelong medical history — prescriptions, diagnostic labs, hospital admissions, and surgical records — securely linked to your official Government ABHA ID.
-            </p>
-          </div>
-
-          {/* Bottom 3 Mission Stats — Verified Government Standards (NO FAKE 34 YRS) */}
-          <div className="relative z-10 pt-6 border-t border-sky-800/60 grid grid-cols-3 gap-2">
-            <div>
-              <p className="text-lg sm:text-xl font-black text-white tracking-tight">ABDM 2.0</p>
-              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">National Health Network</p>
-            </div>
-            <div>
-              <p className="text-lg sm:text-xl font-black text-white tracking-tight">256-Bit</p>
-              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">AES Vault Encryption</p>
-            </div>
-            <div>
-              <p className="text-lg sm:text-xl font-black text-white tracking-tight">eKYC</p>
-              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">Verified ABHA Identity</p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* RIGHT PANE: REAL FIREBASE OTP LOGIN FORM */}
-        <div className="bg-white p-7 sm:p-10 flex flex-col justify-between text-slate-800">
-          
-          <div>
-            {/* Top Role Selector Tabs */}
-            <div className="flex border-b border-slate-200 mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setRole("patient");
-                  setOtpSent(false);
-                  setError("");
-                }}
-                className={`flex-1 pb-3 text-xs sm:text-sm font-bold tracking-tight transition-all relative flex items-center justify-center gap-2 ${
-                  role === "patient"
-                    ? "text-slate-900"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                <User className="w-4 h-4 text-amber-600" />
-                <span>Patient Login</span>
-                {role === "patient" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d95914] rounded-t-full" />
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRole("doctor");
-                  setOtpSent(false);
-                  setError("");
-                }}
-                className={`flex-1 pb-3 text-xs sm:text-sm font-bold tracking-tight transition-all relative flex items-center justify-center gap-2 ${
-                  role === "doctor"
-                    ? "text-slate-900"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                <Stethoscope className="w-4 h-4 text-blue-600" />
-                <span>Doctor & Staff</span>
-                {role === "doctor" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d95914] rounded-t-full" />
-                )}
-              </button>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* STEP 1: INPUT DETAILS & REQUEST OTP */}
-            {!otpSent ? (
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                
-                {/* Full Name Input */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                    {role === "doctor" ? "Doctor Full Name" : "Patient Full Name"}
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={role === "doctor" ? "e.g. Dr. Rajesh Sharma" : "e.g. Rohit Verma"}
-                    required
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
-                  />
+            {/* 3 Core Product Pillars shown in the brand architecture */}
+            <div className="relative z-10 my-6 space-y-3">
+              
+              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-[#48cae4]">
+                  <FileText className="w-4 h-4" />
                 </div>
-
-                {role === "patient" ? (
-                  <>
-                    {/* Subtabs: eKYC Digital Identity vs Mobile OTP */}
-                    <div className="flex border-b border-slate-200 pt-1 pb-1 gap-6">
-                      <button
-                        type="button"
-                        onClick={() => setAuthMethod("ekyc")}
-                        className={`text-xs font-semibold pb-1.5 transition-all relative ${
-                          authMethod === "ekyc"
-                            ? "text-[#d95914] font-bold"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        eKYC Digital Identity (ABHA / Aadhaar)
-                        {authMethod === "ekyc" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#d95914]" />
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setAuthMethod("otp")}
-                        className={`text-xs font-semibold pb-1.5 transition-all relative ${
-                          authMethod === "otp"
-                            ? "text-[#d95914] font-bold"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        Mobile OTP
-                        {authMethod === "otp" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#d95914]" />
-                        )}
-                      </button>
-                    </div>
-
-                    {authMethod === "ekyc" ? (
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                          14-Digit ABHA Number or 12-Digit Aadhaar
-                        </label>
-                        <input
-                          type="text"
-                          value={identityNumber}
-                          onChange={(e) => setIdentityNumber(e.target.value)}
-                          placeholder="e.g. 4210 8842 7731"
-                          required
-                          className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all tracking-wide"
-                        />
-                        <p className="text-[10px] text-slate-500 mt-1">
-                          Official Government verification linked with Ayushman Bharat registry.
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                          Registered Mobile Number
-                        </label>
-                        <input
-                          type="tel"
-                          value={mobileNumber}
-                          onChange={(e) => setMobileNumber(e.target.value)}
-                          placeholder="e.g. +91 98765 43210"
-                          required
-                          className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all tracking-wide"
-                        />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* Doctor Clinical Registration */}
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                        National Medical Commission (NMC) / State Council Reg No.
-                      </label>
-                      <input
-                        type="text"
-                        value={nmcNumber}
-                        onChange={(e) => setNmcNumber(e.target.value)}
-                        placeholder="e.g. NMC-2019-94821"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all tracking-wide"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                        Hospital / Healthcare Facility Affiliation
-                      </label>
-                      <input
-                        type="text"
-                        value={hospitalAffiliation}
-                        onChange={(e) => setHospitalAffiliation(e.target.value)}
-                        placeholder="e.g. Apollo Hospitals, Delhi"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                        Doctor Mobile Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value)}
-                        placeholder="e.g. +91 98100 12345"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all tracking-wide"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Send OTP Button */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-[#d95914] hover:bg-[#c24e0f] text-white font-bold text-sm tracking-wide shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 mt-2"
-                >
-                  {isLoading ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>Send Government eKYC OTP</span>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* STEP 2: VERIFY REAL FIREBASE OTP */
-              <form onSubmit={handleVerifyOtp} className="space-y-4 animate-in fade-in">
-                
-                {/* Government ABDM Gateway Banner */}
-                <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs">
-                  <div className="flex items-center gap-2 font-bold text-emerald-800">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>ABDM Gateway SMS Transmitted</span>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-white">Vault</span>
+                    <span className="text-[9px] text-[#48cae4] uppercase font-semibold">Your Health History</span>
                   </div>
-                  <p className="mt-1 text-[11px] text-emerald-800">
-                    Official 6-digit verification code: <strong className="font-mono text-sm tracking-wider text-emerald-950 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">{sentOtpDisplay}</strong>
+                  <p className="text-[11px] text-sky-100/80 leading-snug mt-0.5">
+                    Unified medical records, test reports, updates, and prescriptions.
                   </p>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
-                    <span>Enter 6-Digit Verification Code</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtpCode("");
-                      }}
-                      className="text-[#d95914] hover:underline text-[11px]"
-                    >
-                      Change Details
-                    </button>
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="e.g. 482910"
-                    autoFocus
-                    required
-                    className="w-full text-center text-lg tracking-[0.4em] font-mono font-bold px-3.5 py-3 rounded-lg border-2 border-[#d95914]/80 focus:border-[#d95914] focus:ring-2 focus:ring-[#d95914]/30 text-slate-900 outline-none transition-all"
-                  />
+              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-[#38bdf8]">
+                  <Radio className="w-4 h-4" />
                 </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-white">Beacon</span>
+                    <span className="text-[9px] text-sky-200 uppercase font-semibold">Your Home Health Hub</span>
+                  </div>
+                  <p className="text-[11px] text-sky-100/80 leading-snug mt-0.5">
+                    Connected health experience available at home, phone, and laptop.
+                  </p>
+                </div>
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-[#0e3c5d] hover:bg-[#092b43] text-white font-bold text-sm tracking-wide shadow-md hover:shadow transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <span>Verify eKYC & Access Vault</span>
-                  )}
-                </button>
-              </form>
-            )}
+              <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-amber-200">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-white">Lumi</span>
+                    <span className="text-[9px] text-amber-200 uppercase font-semibold">Your AI Companion</span>
+                  </div>
+                  <p className="text-[11px] text-sky-100/80 leading-snug mt-0.5">
+                    Understands symptoms, answers questions, and updates your Vault.
+                  </p>
+                </div>
+              </div>
 
-            {/* Quick Demonstration Helpers (Clean, no fake personal data) */}
-            <div className="mt-6 pt-4 border-t border-slate-200">
-              <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
-                Quick Government Sandbox Access
-              </p>
-              <div className="grid grid-cols-2 gap-2">
+            </div>
+
+            {/* International Security Standards */}
+            <div className="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-[11px] text-sky-100/80">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#48cae4]" />
+                <span>HIPAA & GDPR Compliant</span>
+              </span>
+              <span>256-Bit AES</span>
+            </div>
+
+          </div>
+
+          {/* RIGHT PANE: SLEEK LIGHT-MODE SIGN IN */}
+          <div className="md:col-span-7 bg-white p-7 sm:p-12 flex flex-col justify-between text-slate-800">
+            
+            <div>
+              
+              {/* Role Toggle Selector */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
                 <button
                   type="button"
                   onClick={() => {
                     setRole("patient");
-                    setFullName("Rohan Sharma");
-                    setIdentityNumber("91-4210-9941-8821");
-                    setMobileNumber("+91 98765 00001");
-                    setOtpSent(false);
+                    setError("");
                   }}
-                  className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-left transition-colors"
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    role === "patient"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
                 >
-                  <p className="text-[11px] font-bold text-slate-800">New Patient</p>
-                  <p className="text-[10px] text-slate-500">Fresh Clean Vault</p>
+                  <User className="w-4 h-4 text-[#00a896]" />
+                  <span>Personal / Member</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
                     setRole("doctor");
-                    setFullName("Dr. Rajesh Sharma");
-                    setNmcNumber("NMC-2018-99214");
-                    setHospitalAffiliation("Apollo Multi-Specialty Hospital");
-                    setMobileNumber("+91 98100 12345");
-                    setOtpSent(false);
+                    setError("");
                   }}
-                  className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-left transition-colors"
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    role === "doctor"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
                 >
-                  <p className="text-[11px] font-bold text-slate-800">Hospital Physician</p>
-                  <p className="text-[10px] text-slate-500">Doctor Portal</p>
+                  <Stethoscope className="w-4 h-4 text-[#0077b6]" />
+                  <span>Physician / Staff</span>
                 </button>
               </div>
+
+              {/* Title & Prompt */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  {role === "patient" ? "Access Your Health Vault" : "Physician Clinical Access"}
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  {role === "patient"
+                    ? "Sign in with your Google account or enter your name to start with a fresh personal vault."
+                    : "Access clinical records, consented patient files, and digital prescriptions."}
+                </p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* GOOGLE SIGN-IN BUTTON (Requested by user) */}
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                  className="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm tracking-wide shadow-xs hover:shadow transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  <span>Continue with Google</span>
+                </button>
+
+                <div className="relative flex items-center justify-center my-3">
+                  <div className="border-t border-slate-200 w-full" />
+                  <span className="bg-white px-3 text-[11px] text-slate-400 font-semibold uppercase tracking-wider absolute">
+                    or continue with details
+                  </span>
+                </div>
+
+                {/* Instant Form Sign In */}
+                <form onSubmit={handleDirectSignIn} className="space-y-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      {role === "doctor" ? "Physician Full Name" : "Your Full Name"}
+                    </label>
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder={role === "doctor" ? "e.g. Dr. Sarah Jenkins" : "e.g. Alex Morgan"}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#00a896] focus:ring-2 focus:ring-[#00a896]/20 text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. alex@healththread.io"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#00a896] focus:ring-2 focus:ring-[#00a896]/20 text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
+                    />
+                  </div>
+
+                  {role === "doctor" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Hospital or Clinical Practice
+                      </label>
+                      <input
+                        type="text"
+                        value={organization}
+                        onChange={(e) => setOrganization(e.target.value)}
+                        placeholder="e.g. Global Health Network, Mayo Clinic"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#0077b6] focus:ring-2 focus:ring-[#0077b6]/20 text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#00a896] to-[#0077b6] hover:opacity-95 text-white font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 mt-1"
+                  >
+                    {isLoading ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Enter Connected Health Vault</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+              </div>
+
             </div>
 
-          </div>
+            {/* Footer Notice */}
+            <div className="pt-6 border-t border-slate-100 text-center">
+              <p className="text-[11px] text-slate-400">
+                End-to-end encrypted with zero-knowledge keys. Your data is never sold or shared without explicit permission.
+              </p>
+            </div>
 
-          {/* Footer Official Disclaimer */}
-          <div className="pt-4 border-t border-slate-100 text-center">
-            <p className="text-[10px] text-slate-400 leading-relaxed">
-              Official Ayushman Bharat Digital Mission (ABDM) Gateway · Ministry of Health & Family Welfare. End-to-end encrypted with zero-knowledge consent protocols.
-            </p>
           </div>
 
         </div>

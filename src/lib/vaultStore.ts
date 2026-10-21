@@ -1,42 +1,31 @@
 "use client";
 
-import { db, auth } from "./firebase";
+import { db, auth, googleProvider } from "./firebase";
+import { signInWithPopup, signOut as fbSignOut } from "firebase/auth";
 import { 
   collection, 
   doc, 
   getDocs, 
   getDoc, 
   setDoc, 
-  addDoc, 
   updateDoc, 
   deleteDoc, 
   query, 
   orderBy 
 } from "firebase/firestore";
 
-export interface GovernmentEKYC {
-  abhaNumber: string; // 14-digit ABDM number e.g. "91-4210-8842-7731"
-  abhaAddress: string; // e.g. "rohit.sharma@abdm"
-  aadhaarLinked: boolean;
-  verificationStatus: "VERIFIED" | "PENDING";
-  verifiedAt: string;
-  authority: "National Health Authority (NHA) · MoHFW";
-  documentType: "Aadhaar eKYC" | "ABHA Health Card" | "Doctor NMC Registry";
-}
-
 export interface VaultUser {
   id: string;
   displayName: string;
   email: string;
-  healthId: string;
-  phoneNumber: string;
+  healthId: string; // e.g. "HT-GLOBAL-48291"
+  phoneNumber?: string;
   bloodGroup: string;
   role: "patient" | "doctor";
   isVerified: boolean;
-  age?: number;
-  nmcNumber?: string; // For doctors (National Medical Commission registration)
-  hospitalAffiliation?: string; // For doctors
-  ekycDetails?: GovernmentEKYC;
+  photoURL?: string;
+  organization?: string;
+  licenseNumber?: string;
 }
 
 export interface EmergencyMedicalProfile {
@@ -83,104 +72,74 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs = 1200): Promise<T> => {
 };
 
 /**
- * 1. REAL FIREBASE OTP VERIFICATION SERVICE
- * Generates real 6-digit codes and stores them in Firebase Firestore
+ * 1. REAL GOOGLE SIGN-IN VIA FIREBASE
+ * Automatically creates a clean, fresh, un-hardcoded international account
  */
-export async function generateAndSendOtp(identifier: string): Promise<{ success: boolean; code: string; message: string }> {
-  const cleanId = identifier.replace(/[^a-zA-Z0-9]/g, "").trim().toLowerCase();
-  if (!cleanId) {
-    throw new Error("Invalid phone or identity number provided.");
-  }
+export async function signInWithGoogleAuth(role: "patient" | "doctor" = "patient"): Promise<VaultUser> {
+  const result = await signInWithPopup(auth, googleProvider);
+  const fbUser = result.user;
 
-  // Generate authentic 6-digit OTP code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes validity
+  const cleanName = fbUser.displayName || (role === "doctor" ? "Physician Member" : "Health Member");
+  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+  const globalHealthId = `HT-GLOBAL-${randomSuffix}`;
 
-  // Save to Firebase Firestore under "verification_otps"
+  // Check if existing user in Firestore
+  let existingUser: VaultUser | null = null;
   try {
     if (db) {
-      const otpRef = doc(db, "verification_otps", cleanId);
-      await withTimeout(setDoc(otpRef, {
-        code,
-        identifier: cleanId,
-        createdAt: new Date().toISOString(),
-        expiresAt,
-        used: false
-      }, { merge: true }), 1500);
-    }
-  } catch (err) {
-    console.warn("Firestore OTP write fallback:", err);
-  }
-
-  // Local storage cache for instant verification fallback
-  if (typeof window !== "undefined") {
-    sessionStorage.setItem(`otp_${cleanId}`, JSON.stringify({ code, expiresAt, used: false }));
-  }
-
-  return {
-    success: true,
-    code,
-    message: `Government ABDM Gateway: OTP for ${identifier} is ${code}. Valid for 10 minutes.`
-  };
-}
-
-export async function verifyOtp(identifier: string, enteredCode: string): Promise<{ success: boolean; error?: string }> {
-  const cleanId = identifier.replace(/[^a-zA-Z0-9]/g, "").trim().toLowerCase();
-  const cleanCode = enteredCode.trim();
-
-  if (!cleanCode || cleanCode.length < 4) {
-    return { success: false, error: "Please enter the 6-digit verification code." };
-  }
-
-  // 1. Check SessionStorage first for fast response
-  if (typeof window !== "undefined") {
-    const cached = sessionStorage.getItem(`otp_${cleanId}`);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.code === cleanCode) {
-          if (Date.now() > parsed.expiresAt) {
-            return { success: false, error: "OTP has expired. Please request a new one." };
-          }
-          parsed.used = true;
-          sessionStorage.setItem(`otp_${cleanId}`, JSON.stringify(parsed));
-          return { success: true };
-        }
-      } catch (e) {}
-    }
-  }
-
-  // 2. Check Firestore
-  try {
-    if (db) {
-      const otpRef = doc(db, "verification_otps", cleanId);
-      const snap = await withTimeout(getDoc(otpRef), 1500);
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.code === cleanCode) {
-          if (Date.now() > data.expiresAt) {
-            return { success: false, error: "OTP has expired. Please request a new one." };
-          }
-          await updateDoc(otpRef, { used: true, verifiedAt: new Date().toISOString() });
-          return { success: true };
-        }
+      const userDoc = await withTimeout(getDoc(doc(db, "users", fbUser.uid)), 1500);
+      if (userDoc.exists()) {
+        existingUser = userDoc.data() as VaultUser;
       }
     }
-  } catch (err) {
-    console.warn("Firestore OTP verification fallback:", err);
-  }
+  } catch (e) {}
 
-  // Demo fallback for instant test if entered 123456 or identical
-  if (cleanCode === "123456" || cleanCode === "482910") {
-    return { success: true };
-  }
+  const activeUser: VaultUser = existingUser || {
+    id: fbUser.uid,
+    displayName: cleanName,
+    email: fbUser.email || `${fbUser.uid}@healththread.io`,
+    healthId: globalHealthId,
+    phoneNumber: fbUser.phoneNumber || undefined,
+    bloodGroup: "Not specified",
+    role: role,
+    isVerified: true,
+    photoURL: fbUser.photoURL || undefined
+  };
 
-  return { success: false, error: "Invalid OTP code. Please enter the correct code shown in the gateway banner." };
+  await setActiveUser(activeUser);
+  return activeUser;
 }
 
 /**
- * 2. ACTIVE USER IDENTITY & SESSION MANAGEMENT
- * Returns null if user is not logged in! Never returns fake default user.
+ * 2. QUICK FRESH ACCOUNT ENTRY (NO OTP, NO EKYC, NO HARDCODING)
+ */
+export async function createFreshAccount(
+  name: string, 
+  email: string, 
+  role: "patient" | "doctor" = "patient",
+  organization?: string
+): Promise<VaultUser> {
+  const cleanName = name.trim() || (role === "doctor" ? "Dr. Health Specialist" : "New Member");
+  const cleanId = "usr_" + cleanName.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 20) + "_" + Math.floor(1000 + Math.random() * 9000);
+  const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+
+  const newUser: VaultUser = {
+    id: cleanId,
+    displayName: cleanName,
+    email: email.trim() || `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "")}@healththread.io`,
+    healthId: `HT-GLOBAL-${randomSuffix}`,
+    bloodGroup: "Not specified",
+    role: role,
+    isVerified: true,
+    organization: organization?.trim() || undefined
+  };
+
+  await setActiveUser(newUser);
+  return newUser;
+}
+
+/**
+ * 3. SESSION MANAGEMENT
  */
 export function getActiveUser(): VaultUser | null {
   if (typeof window === "undefined") {
@@ -204,7 +163,7 @@ export async function setActiveUser(user: VaultUser) {
     window.dispatchEvent(new Event("vitallens_user_updated"));
   }
 
-  // Persist directly to Firebase Firestore users collection
+  // Persist directly to Firebase Firestore
   try {
     if (db && user.id) {
       const userRef = doc(db, "users", user.id);
@@ -212,13 +171,11 @@ export async function setActiveUser(user: VaultUser) {
         displayName: user.displayName,
         email: user.email,
         healthId: user.healthId,
-        phoneNumber: user.phoneNumber,
         bloodGroup: user.bloodGroup,
         role: user.role,
         isVerified: user.isVerified,
-        nmcNumber: user.nmcNumber || null,
-        hospitalAffiliation: user.hospitalAffiliation || null,
-        ekycDetails: user.ekycDetails || null,
+        photoURL: user.photoURL || null,
+        organization: user.organization || null,
         lastActive: new Date().toISOString()
       }, { merge: true });
     }
@@ -232,30 +189,33 @@ export function clearActiveUser() {
     localStorage.removeItem("vitallens_active_user");
     window.dispatchEvent(new Event("vitallens_user_updated"));
   }
+  try {
+    fbSignOut(auth);
+  } catch(e) {}
 }
 
 /**
- * 3. ACCOUNT-SPECIFIC EMERGENCY PROFILE (Stored by userId)
- * Fresh new accounts start with clean, un-hallucinated defaults.
+ * 4. EMERGENCY PROFILE (Stored by userId)
+ * Fresh accounts start with clean, empty defaults
  */
 export async function getEmergencyProfile(userId?: string): Promise<EmergencyMedicalProfile> {
   const active = getActiveUser();
   const uid = userId || active?.id;
 
-  if (!uid) {
-    return {
-      bloodGroup: "Not specified",
-      knownAllergies: "None reported",
-      currentMedications: "None",
-      chronicConditions: "None",
-      previousSurgeries: "None",
-      emergencyContact: "Not provided"
-    };
-  }
+  const defaultProfile: EmergencyMedicalProfile = {
+    bloodGroup: active?.bloodGroup || "Not specified",
+    knownAllergies: "None reported",
+    currentMedications: "None",
+    chronicConditions: "None",
+    previousSurgeries: "None",
+    emergencyContact: "Not provided"
+  };
+
+  if (!uid) return defaultProfile;
 
   const storageKey = `vault_emergency_${uid}`;
 
-  // 1. Check local storage first for instant response
+  // 1. Check local storage first
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
@@ -265,7 +225,7 @@ export async function getEmergencyProfile(userId?: string): Promise<EmergencyMed
     }
   }
 
-  // 2. Fetch from Firestore with timeout
+  // 2. Fetch from Firestore
   try {
     if (db && uid) {
       const ref = doc(db, "users", uid, "vault", "emergency_profile");
@@ -278,25 +238,13 @@ export async function getEmergencyProfile(userId?: string): Promise<EmergencyMed
         return data;
       }
     }
-  } catch (err) {
-    // Fallback to fresh defaults
-  }
-
-  // 3. Fresh blank profile for new account (No fake surgeries or medications)
-  const freshProfile: EmergencyMedicalProfile = {
-    bloodGroup: active?.bloodGroup || "Not specified",
-    knownAllergies: "None reported",
-    currentMedications: "None",
-    chronicConditions: "None",
-    previousSurgeries: "None",
-    emergencyContact: active?.phoneNumber || "Not provided"
-  };
+  } catch (err) {}
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(storageKey, JSON.stringify(freshProfile));
+    localStorage.setItem(storageKey, JSON.stringify(defaultProfile));
   }
 
-  return freshProfile;
+  return defaultProfile;
 }
 
 export async function saveEmergencyProfile(profile: EmergencyMedicalProfile, userId?: string) {
@@ -309,13 +257,11 @@ export async function saveEmergencyProfile(profile: EmergencyMedicalProfile, use
     updatedAt: new Date().toISOString()
   };
 
-  // 1. Update localStorage immediately for instant UI responsiveness
   if (typeof window !== "undefined") {
     localStorage.setItem(storageKey, JSON.stringify(profileWithDate));
     window.dispatchEvent(new Event("healththread_profile_updated"));
   }
 
-  // 2. Persist to Firebase Firestore
   try {
     if (db && uid) {
       const ref = doc(db, "users", uid, "vault", "emergency_profile");
@@ -327,8 +273,8 @@ export async function saveEmergencyProfile(profile: EmergencyMedicalProfile, use
 }
 
 /**
- * 4. ACCOUNT-SPECIFIC CLINICAL TIMELINE (Stored by userId)
- * Fresh new accounts start with an empty timeline: []
+ * 5. CLINICAL TIMELINE (Stored by userId)
+ * Fresh accounts start with an empty list []
  */
 export async function getTimelineEvents(userId?: string): Promise<ClinicalTimelineItem[]> {
   const uid = userId || getActiveUser()?.id;
@@ -336,20 +282,20 @@ export async function getTimelineEvents(userId?: string): Promise<ClinicalTimeli
 
   const storageKey = `vault_timeline_${uid}`;
 
-  // 1. Fetch from Local Storage for THIS user first for instant load
+  // 1. Check local storage first
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // Asynchronously sync with Firestore in background without blocking
+          // Sync with Firestore in background
           if (db && uid) {
             const colRef = collection(db, "users", uid, "timeline");
             const q = query(colRef, orderBy("year", "desc"));
             withTimeout(getDocs(q), 1200).then(snap => {
               if (!snap.empty) {
-                const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ClinicalTimelineItem[];
+                const items = snap.docs.map(d => ({ id: d.id, ...d.data() })) as ClinicalTimelineItem[];
                 localStorage.setItem(storageKey, JSON.stringify(items));
               }
             }).catch(() => {});
@@ -360,25 +306,22 @@ export async function getTimelineEvents(userId?: string): Promise<ClinicalTimeli
     }
   }
 
-  // 2. Fetch from Firestore if no local cache
+  // 2. Fetch from Firestore
   try {
     if (db && uid) {
       const colRef = collection(db, "users", uid, "timeline");
       const q = query(colRef, orderBy("year", "desc"));
       const snap = await withTimeout(getDocs(q), 1200);
       if (!snap.empty) {
-        const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ClinicalTimelineItem[];
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() })) as ClinicalTimelineItem[];
         if (typeof window !== "undefined") {
           localStorage.setItem(storageKey, JSON.stringify(items));
         }
         return items;
       }
     }
-  } catch (err) {
-    // Fallback to empty
-  }
+  } catch (err) {}
 
-  // 3. New accounts start with fresh empty timeline
   return [];
 }
 
@@ -394,7 +337,6 @@ export async function addTimelineEvent(item: Omit<ClinicalTimelineItem, "id">, u
     createdAt: new Date().toISOString()
   };
 
-  // 1. Update localStorage
   if (typeof window !== "undefined") {
     const existing = await getTimelineEvents(uid);
     const updated = [fullItem, ...existing];
@@ -402,7 +344,6 @@ export async function addTimelineEvent(item: Omit<ClinicalTimelineItem, "id">, u
     window.dispatchEvent(new Event("healththread_timeline_updated"));
   }
 
-  // 2. Persist to Firestore
   try {
     if (db && uid) {
       const ref = doc(db, "users", uid, "timeline", newId);
@@ -439,7 +380,7 @@ export async function deleteTimelineEvent(id: string, userId?: string) {
 }
 
 /**
- * 5. ACCOUNT-SPECIFIC CONSENTS (Stored by userId)
+ * 6. INTERNATIONAL CONSENTS & SHARING (Stored by userId)
  */
 export async function getConsents(userId?: string): Promise<ConsentAuthorization[]> {
   const uid = userId || getActiveUser()?.id;
@@ -447,53 +388,40 @@ export async function getConsents(userId?: string): Promise<ConsentAuthorization
 
   const storageKey = `vault_consents_${uid}`;
 
-  // 1. Fetch from Local Storage for THIS user first
   if (typeof window !== "undefined") {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          if (db && uid) {
-            const colRef = collection(db, "users", uid, "consents");
-            withTimeout(getDocs(colRef), 1200).then(snap => {
-              if (!snap.empty) {
-                const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ConsentAuthorization[];
-                localStorage.setItem(storageKey, JSON.stringify(items));
-              }
-            }).catch(() => {});
-          }
           return parsed;
         }
       } catch (e) {}
     }
   }
 
-  // 2. Fetch from Firestore if no local cache
   try {
     if (db && uid) {
       const colRef = collection(db, "users", uid, "consents");
       const snap = await withTimeout(getDocs(colRef), 1200);
       if (!snap.empty) {
-        const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ConsentAuthorization[];
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() })) as ConsentAuthorization[];
         if (typeof window !== "undefined") {
           localStorage.setItem(storageKey, JSON.stringify(items));
         }
         return items;
       }
     }
-  } catch (err) {
-    // Fallback
-  }
+  } catch (err) {}
 
-  // Default ABDM base authorization for new account
+  // Clean International Base Consent
   const defaultConsents: ConsentAuthorization[] = [
     {
-      id: "c-abdm-registry",
-      requester: "National Digital Health Mission (ABDM Gateway)",
-      type: "Government Central Registry",
-      scope: ["Emergency Profile", "Verified Lifelong Records"],
-      validUntil: "31 Dec 2030",
+      id: "c-global-cloud",
+      requester: "HealthThread Global Vault Security (HIPAA & GDPR)",
+      type: "Encrypted Cloud Storage",
+      scope: ["Emergency Medical Profile", "Encrypted Vault Records"],
+      validUntil: "Indefinite · Patient Revocable",
       status: "ACTIVE",
       lastAccessed: "Account Registration"
     }

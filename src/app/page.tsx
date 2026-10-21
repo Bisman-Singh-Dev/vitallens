@@ -18,20 +18,24 @@ import {
   PhoneCall, 
   QrCode, 
   FileSearch, 
-  UserCheck, 
-  Building2, 
-  ShieldAlert, 
-  KeyRound,
-  Download,
-  ExternalLink
+  Radio,
+  Laptop,
+  Smartphone,
+  ChevronRight,
+  Globe2,
+  RefreshCw,
+  Check,
+  Download
 } from "lucide-react";
 import Link from "next/link";
-import { HealthThreadLogo, TricolorBar } from "@/components/HealthThreadLogo";
+import { HealthThreadLogo, BrandAccentBar } from "@/components/HealthThreadLogo";
 import CuteNeonEyes from "@/components/CuteNeonEyes";
-import { getActiveUser, VaultUser } from "@/lib/vaultStore";
+import { getActiveUser, VaultUser, signInWithGoogleAuth } from "@/lib/vaultStore";
 import { triggerPwaInstall } from "@/components/PwaInstallPrompt";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<VaultUser | null>(null);
 
   useEffect(() => {
@@ -42,47 +46,55 @@ export default function LandingPage() {
     return () => window.removeEventListener("vitallens_user_updated", handleUpdate);
   }, []);
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col select-none">
-      
-      {/* 1. TOP NATIONAL TRICOLOR BAR */}
-      <TricolorBar />
+  const handleQuickGoogle = async () => {
+    try {
+      await signInWithGoogleAuth("patient");
+      router.push("/dashboard");
+    } catch (e) {
+      router.push("/login");
+    }
+  };
 
-      {/* 2. OFFICIAL GOVERNMENT HEADER */}
-      <header className="bg-[#0b2d49] text-white border-b border-sky-900/50 sticky top-0 z-40 shadow-md">
+  return (
+    <div className="min-h-screen bg-[#fafcfd] text-slate-900 flex flex-col select-none overflow-x-hidden">
+      
+      {/* 1. TOP BRAND ACCENT BAR (Teal, Mint, Cyan, Ocean Blue) */}
+      <BrandAccentBar />
+
+      {/* 2. SLEEK LIGHT-MODE HEADER */}
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <HealthThreadLogo />
-            <div className="hidden sm:block border-l border-sky-800/80 pl-3">
-              <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest block">
-                Official Health Vault
-              </span>
-              <span className="text-[9px] text-sky-200/70 block">
-                Ayushman Bharat Digital Mission (ABDM)
-              </span>
-            </div>
+            
+            <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600">
+              <a href="#vault" className="hover:text-[#00a896] transition-colors">Vault</a>
+              <a href="#beacon" className="hover:text-[#00a896] transition-colors">Beacon</a>
+              <a href="#lumi" className="hover:text-[#00a896] transition-colors">Lumi AI</a>
+              <a href="#how-it-works" className="hover:text-[#00a896] transition-colors">How It Works</a>
+            </nav>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => triggerPwaInstall()}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-700/60 bg-sky-950/60 hover:bg-sky-900 text-sky-200 text-xs font-semibold transition-all"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-all"
             >
-              <Download className="w-3.5 h-3.5 text-sky-400" />
-              <span>Install Web App</span>
+              <Download className="w-3.5 h-3.5 text-[#00a896]" />
+              <span>App</span>
             </button>
 
             {currentUser ? (
               <div className="flex items-center gap-2">
-                <span className="hidden sm:inline text-xs text-sky-200 font-medium">
-                  Signed in as <strong>{currentUser.displayName}</strong>
+                <span className="hidden sm:inline text-xs text-slate-600 font-medium">
+                  Welcome, <strong>{currentUser.displayName}</strong>
                 </span>
                 <Link
                   href="/dashboard"
-                  className="px-4 py-2 rounded-xl bg-[#d95914] hover:bg-[#c24e0f] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00a896] to-[#0077b6] hover:opacity-95 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                 >
-                  <span>Go to Vault</span>
+                  <span>Open Vault</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -90,15 +102,15 @@ export default function LandingPage() {
               <div className="flex items-center gap-2.5">
                 <Link
                   href="/login"
-                  className="px-3 sm:px-4 py-2 rounded-xl text-sky-200 hover:text-white hover:bg-sky-900/50 text-xs font-bold transition-all"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition-all"
                 >
-                  Doctor Login
+                  Sign In
                 </Link>
                 <Link
                   href="/login"
-                  className="px-4 py-2 rounded-xl bg-[#d95914] hover:bg-[#c24e0f] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00a896] to-[#0077b6] hover:opacity-95 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                 >
-                  <span>Access Vault / Login</span>
+                  <span>Get Started</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -109,274 +121,237 @@ export default function LandingPage() {
       </header>
 
       {/* 3. HERO SECTION */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#0b2d49] via-[#0e3c5d] to-[#124d77] text-white py-16 sm:py-24 px-4 sm:px-8 border-b border-sky-900/40">
+      <section className="relative overflow-hidden pt-16 pb-20 sm:pt-24 sm:pb-28 px-4 sm:px-8 border-b border-slate-200/60 bg-gradient-to-b from-[#f0f9ff]/70 via-[#f8fafc] to-white">
         
-        {/* Subtle Decorative Background Circles */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-sky-400/[0.04] pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-80 h-80 rounded-full bg-emerald-400/[0.03] pointer-events-none" />
+        {/* Soft Ambient Brand Color Blobs */}
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-r from-[#00a896]/10 via-[#48cae4]/15 to-[#0077b6]/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-6">
           
-          {/* Left Hero Content */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-950/80 border border-sky-600/50 text-sky-200 text-xs font-semibold backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>National Health Authority · ABDM Compliant Architecture</span>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-teal-200 shadow-xs text-xs font-semibold text-slate-700"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#00a896] animate-pulse" />
+            <span>HealthThread Ecosystem · Software, Product & AI Companion</span>
+          </motion.div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12]">
-              One Citizen.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-200 via-white to-amber-200">
-                One Lifelong Digital Health Record.
-              </span>
-            </h1>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.08]"
+          >
+            Your Health,<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00a896] via-[#00b4d8] to-[#0077b6]">
+              Connected.
+            </span>
+          </motion.h1>
 
-            <p className="text-sm sm:text-base text-sky-100/90 leading-relaxed max-w-xl">
-              Securely consolidate all your hospital discharge summaries, diagnostic lab reports, prescriptions, and emergency vitals into a tamper-proof national vault. Integrated with multimodal <strong>RoboDoc AI</strong> for instantaneous clinical diagnostics.
-            </p>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal"
+          >
+            A seamless flow for better health. Your records unified in <strong>Vault</strong>, your home connected through <strong>Beacon</strong>, and your intelligent clinical companion in <strong>Lumi</strong>.
+          </motion.p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link
-                href="/login"
-                className="px-6 py-3.5 rounded-xl bg-[#d95914] hover:bg-[#c24e0f] text-white font-bold text-sm tracking-wide shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-              >
-                <span>Verify eKYC & Enter Vault</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              
-              <a
-                href="#features"
-                className="px-5 py-3.5 rounded-xl bg-sky-900/60 hover:bg-sky-800 text-sky-100 font-semibold text-sm border border-sky-600/40 transition-all flex items-center gap-2"
-              >
-                <span>Explore All 8 Clinical Features</span>
-              </a>
-            </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-wrap items-center justify-center gap-3 pt-3"
+          >
+            <button
+              onClick={handleQuickGoogle}
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm tracking-wide shadow-sm hover:shadow transition-all flex items-center gap-3"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
 
-            {/* 3 Real Verifiable Government Standards */}
-            <div className="pt-6 border-t border-sky-800/80 grid grid-cols-3 gap-4 max-w-md">
-              <div>
-                <p className="text-lg font-black text-white">14-Digit</p>
-                <p className="text-[11px] text-sky-200/80">Universal ABHA ID</p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-white">256-Bit</p>
-                <p className="text-[11px] text-sky-200/80">AES Vault Encryption</p>
-              </div>
-              <div>
-                <p className="text-lg font-black text-white">100%</p>
-                <p className="text-[11px] text-sky-200/80">Patient Consent Control</p>
-              </div>
-            </div>
+            <Link
+              href="/login"
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#00a896] to-[#0077b6] hover:opacity-95 text-white font-bold text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              <span>Open Your Vault Free</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
 
-          </div>
-
-          {/* Right Hero Interactive Preview: Live Digital Health ID Card */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center">
-            <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-6 sm:p-7 rounded-3xl shadow-2xl relative overflow-hidden text-white">
-              
-              <div className="flex items-center justify-between pb-4 border-b border-white/15">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-                    ABHA eKYC Certified
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-sky-200">
-                  NHA · MoHFW
-                </span>
-              </div>
-
-              <div className="my-5 space-y-3">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-sky-300">
-                  Universal Health Identifier
-                </p>
-                <p className="font-mono text-xl sm:text-2xl font-bold tracking-wider text-white">
-                  91-4210-8842-7731
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-sky-100 pt-2">
-                  <div>
-                    <span className="text-sky-300/80 block text-[10px] uppercase">ABHA Address</span>
-                    <span className="font-semibold">citizen@abdm</span>
-                  </div>
-                  <div>
-                    <span className="text-sky-300/80 block text-[10px] uppercase">Aadhaar Linked</span>
-                    <span className="font-semibold text-emerald-300">✓ Biometric Verified</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Quick Feature Tag in Card */}
-              <div className="pt-4 border-t border-white/15 flex items-center justify-between text-xs">
-                <span className="text-sky-200 text-[11px]">RoboDoc AI Doctor Enabled</span>
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-              </div>
-
-            </div>
+          <div className="pt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#00a896]" /> HIPAA & GDPR Standard</span>
+            <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-[#00b4d8]" /> 256-Bit Zero Knowledge</span>
+            <span className="flex items-center gap-1.5"><Globe2 className="w-4 h-4 text-[#0077b6]" /> HL7 / FHIR Interoperable</span>
           </div>
 
         </div>
       </section>
 
-      {/* 4. ALL 8 CORE FEATURES OF THE NATIONAL VAULT (Requested by user) */}
-      <section id="features" className="py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+      {/* 4. THE 3 CORE PILLARS (EXACT CARDS FROM IMAGE: VAULT, BEACON, LUMI) */}
+      <section id="ecosystem" className="py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full">
         
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#d95914] bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-            Comprehensive Digital Health Ecosystem
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-[#00a896] bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
+            Unified Health Experience
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Built for National Healthcare Security & Clinical Intelligence
+            Three Pillars. One Proactive Life.
           </h2>
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Every feature is purpose-built to comply with Ayushman Bharat Digital Mission (ABDM) standards and provide instantaneous clinical AI assistance.
+          <p className="text-sm text-slate-600">
+            Designed as a continuous loop to keep your clinical history complete, your home connected, and your diagnostics real-time.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          {/* Feature 1 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center border border-sky-100">
-                <FileText className="w-5 h-5" />
+          {/* CARD 1: VAULT (SOFTWARE) */}
+          <div id="vault" className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-teal-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#00a896]">
+                  Software
+                </span>
+                <span className="w-8 h-8 rounded-full bg-teal-50 text-[#00a896] flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </span>
               </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                1. Lifelong Digital Health Vault
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Chronological timeline unifying lab tests, prescriptions, immunizations, and hospital stays across all healthcare providers for life.
+              
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Vault</h3>
+              <p className="text-xs font-bold text-[#00a896] mt-0.5">Your health history</p>
+              
+              <p className="text-xs text-slate-600 leading-relaxed mt-3">
+                A secure, unified home for your medical records, history, updates, medications, test results, and more.
               </p>
+
+              {/* Graphical Card Representation */}
+              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-teal-50/40 border border-slate-200 text-xs space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 pb-2 border-b border-slate-200">
+                  <span>Your Health History</span>
+                  <span className="text-teal-700">Encrypted</span>
+                </div>
+                <div className="space-y-1.5 text-[11px] text-slate-600">
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-[#00a896]" />
+                    <span>Lab Results & Blood Panels</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-[#48cae4]" />
+                    <span>Active Medications & Dosages</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-[#0077b6]" />
+                    <span>Doctor Visits & Clinical Notes</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-sky-700">
-              <span>ABHA Integrated</span>
+
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#00a896]">
+              <span>Lifelong Medical Timeline</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md flex flex-col justify-between relative overflow-hidden">
-            <div className="space-y-3 relative z-10">
-              <div className="w-11 h-11 rounded-xl bg-red-950/80 text-neon-red flex items-center justify-center border border-red-500/40">
-                <Bot className="w-5 h-5 text-red-400" />
+          {/* CARD 2: BEACON (PRODUCT ECOSYSTEM) */}
+          <div id="beacon" className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-cyan-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#00b4d8]">
+                  Product Ecosystem
+                </span>
+                <span className="w-8 h-8 rounded-full bg-cyan-50 text-[#00b4d8] flex items-center justify-center">
+                  <Radio className="w-4 h-4" />
+                </span>
               </div>
-              <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-                <span>2. RoboDoc Multimodal AI</span>
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Voice-activated hands-free consultation, symptom diagnosis, camera-based visual assessment, and dedicated <strong>100% Full-Screen Device Mode</strong>.
+              
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Beacon</h3>
+              <p className="text-xs font-bold text-[#00b4d8] mt-0.5">Your home health hub</p>
+              
+              <p className="text-xs text-slate-600 leading-relaxed mt-3">
+                A connected health experience available at home, on your phone, and on your laptop with continuous synchronization.
               </p>
+
+              {/* Graphical Card Representation */}
+              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-cyan-50/40 border border-slate-200 text-xs space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 pb-2 border-b border-slate-200">
+                  <span>Connected Devices</span>
+                  <span className="text-cyan-700">Online</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-[10px] text-slate-600">
+                  <div className="p-2 bg-white rounded-xl shadow-2xs flex flex-col items-center gap-1">
+                    <Radio className="w-4 h-4 text-[#00b4d8]" />
+                    <span>Home Hub</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-xl shadow-2xs flex flex-col items-center gap-1">
+                    <Smartphone className="w-4 h-4 text-[#00a896]" />
+                    <span>Phone</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-xl shadow-2xs flex flex-col items-center gap-1">
+                    <Laptop className="w-4 h-4 text-[#0077b6]" />
+                    <span>Laptop</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 text-center pt-1">
+                  "Good morning, Alex. How can I help you today?"
+                </p>
+              </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-800 flex items-center text-[11px] font-semibold text-red-400">
-              <span>Voice & Vision AI</span>
+
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#00b4d8]">
+              <span>Real-Time Device Sync</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
-          {/* Feature 3 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
-                <Lock className="w-5 h-5" />
+          {/* CARD 3: LUMI (AI ASSISTANT) */}
+          <div id="lumi" className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-sky-300 transition-all flex flex-col justify-between group">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#0077b6]">
+                  AI Assistant
+                </span>
+                <span className="w-8 h-8 rounded-full bg-sky-50 text-[#0077b6] flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-[#0077b6]" />
+                </span>
               </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                3. ABDM Consent Management
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Complete patient autonomy. Authorize hospital records access with defined expiration dates and revoke doctor access with a single click.
+              
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Lumi</h3>
+              <p className="text-xs font-bold text-[#0077b6] mt-0.5">Your health companion</p>
+              
+              <p className="text-xs text-slate-600 leading-relaxed mt-3">
+                An AI companion inside Beacon that helps you understand symptoms, answer questions, and keep your health history updated in Vault.
               </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-emerald-700">
-              <span>Patient Data Sovereignty</span>
-            </div>
-          </div>
 
-          {/* Feature 4 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100">
-                <FileSearch className="w-5 h-5" />
+              {/* Graphical Card Representation */}
+              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-[#053d52] text-white border border-slate-800 text-xs space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-white pb-2 border-b border-slate-700">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#48cae4]" />
+                    <span>Lumi Active Agent</span>
+                  </div>
+                  <span className="text-[9px] bg-[#00a896]/30 text-[#48cae4] px-1.5 py-0.5 rounded font-mono">Vision & Voice</span>
+                </div>
+                <div className="p-2 rounded-xl bg-black/40 text-[10px] text-slate-200 leading-relaxed border border-white/10">
+                  "I noticed your resting heart rate and symptoms. Comparing with your past history in Vault..."
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-[#48cae4] pt-1">
+                  <span>Say "WakeUp Lumi"</span>
+                  <span className="font-semibold text-white">Full Screen Kiosk &rarr;</span>
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                4. Document & Pathology OCR
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Upload handwritten doctor prescriptions or complex blood panel PDFs. Clinical AI extracts diagnoses, biomarkers, and dosages automatically.
-              </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-blue-700">
-              <span>Automatic Extraction</span>
-            </div>
-          </div>
 
-          {/* Feature 5 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-100">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                5. Emergency Profile & SOS
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Critical blood group, allergies, and emergency contacts accessible via public QR card. Direct 108/112 ambulance linkage and ER video consults.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-rose-700">
-              <span>Life-Saving QR Access</span>
-            </div>
-          </div>
-
-          {/* Feature 6 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-100">
-                <Baby className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                6. Maternal & Child Health
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Dedicated trimester vitals tracking, fetal heart rate monitoring, ultrasound report archive, and prenatal vaccination schedules.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-amber-700">
-              <span>Prenatal Care Tracking</span>
-            </div>
-          </div>
-
-          {/* Feature 7 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100">
-                <Stethoscope className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                7. Doctor & Staff Portal
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                NMC-registered physicians can look up patients by ABHA, view consented diagnostic history, and sign electronic prescriptions.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-indigo-700">
-              <span>Clinical Registry</span>
-            </div>
-          </div>
-
-          {/* Feature 8 */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-11 h-11 rounded-xl bg-yellow-50 text-yellow-700 flex items-center justify-center border border-yellow-100">
-                <Bell className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                8. Voice-Guided Health Alarms
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Spoken audio medication reminders that speak dosage instructions automatically, preventing missed doses for elderly or chronic patients.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center text-[11px] font-semibold text-yellow-700">
-              <span>Adherence Assistant</span>
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#0077b6]">
+              <span>Voice & Camera Diagnostics</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
 
@@ -384,79 +359,177 @@ export default function LandingPage() {
 
       </section>
 
-      {/* 5. ROBODOC FULLSCREEN SHOWCASE BANNER */}
-      <section className="bg-[#050507] text-white py-16 px-4 sm:px-8 border-y border-red-950/40">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
-          <div className="lg:w-1/2 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-neon-red/50 text-red-200 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-neon-red animate-pulse" />
-              <span>Full Screen Robot Mode</span>
+      {/* 5. "HOW IT ALL WORKS TOGETHER" (FLOW DIAGRAM MATCHING USER IMAGE) */}
+      <section id="how-it-works" className="py-20 px-4 sm:px-8 bg-gradient-to-b from-white via-[#f0f9ff]/40 to-slate-50 border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center max-w-2xl mx-auto mb-16 space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+              How It All Works Together
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              A Seamless Flow for Better Health.
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Your health information, your AI companion, and your connected devices — all working together as one.
+            </p>
+          </div>
+
+          {/* Workflow Diagram Container */}
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-md">
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+              
+              {/* Node 1: You */}
+              <div className="flex flex-col items-center text-center p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm mb-3">
+                  You
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Member</h4>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Interact through Beacon on your home device, phone, or laptop.
+                </p>
+              </div>
+
+              {/* Node 2: Beacon */}
+              <div className="flex flex-col items-center text-center p-5 rounded-2xl bg-cyan-50/60 border border-cyan-200">
+                <div className="w-12 h-12 rounded-full bg-[#00b4d8] text-white flex items-center justify-center mb-3 shadow-sm">
+                  <Radio className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Beacon</h4>
+                <p className="text-[10px] font-bold text-[#00b4d8] uppercase">Home Health Hub</p>
+                <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                  Centralized interface connecting hardware sensors & displays.
+                </p>
+              </div>
+
+              {/* Node 3: Lumi */}
+              <div className="flex flex-col items-center text-center p-5 rounded-2xl bg-sky-50/60 border border-sky-200">
+                <div className="w-12 h-12 rounded-full bg-[#0077b6] text-white flex items-center justify-center mb-3 shadow-sm">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Lumi</h4>
+                <p className="text-[10px] font-bold text-[#0077b6] uppercase">AI Companion</p>
+                <ul className="text-[11px] text-slate-600 mt-1 text-left space-y-1">
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> Answers your questions</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> Personalized insights</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> Voice symptom check</li>
+                </ul>
+              </div>
+
+              {/* Node 4: Vault */}
+              <div className="flex flex-col items-center text-center p-5 rounded-2xl bg-teal-50/60 border border-teal-200">
+                <div className="w-12 h-12 rounded-full bg-[#00a896] text-white flex items-center justify-center mb-3 shadow-sm">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Vault</h4>
+                <p className="text-[10px] font-bold text-[#00a896] uppercase">Your Health History</p>
+                <ul className="text-[11px] text-slate-600 mt-1 text-left space-y-1">
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> Reads health records</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> Updates your timeline</li>
+                  <li className="flex items-center gap-1.5"><Check className="w-3 h-3 text-[#00a896]" /> 100% Secure & unified</li>
+                </ul>
+              </div>
+
             </div>
+
+            {/* Continuous Loop Caption */}
+            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#00a896]">
+                A continuous loop for a more connected, proactive you.
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 6. IMMERSIVE LUMI FULLSCREEN KIOSK TEASER */}
+      <section className="bg-slate-950 text-white py-16 px-4 sm:px-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,168,150,0.15)_0%,rgba(5,5,7,1)_70%)] pointer-events-none" />
+        
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10 relative z-10">
+          <div className="lg:w-1/2 space-y-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00a896]/20 border border-[#00a896]/40 text-[#48cae4] text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" /> Fullscreen Kiosk Mode
+            </span>
             <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              Transform Your Device into a Dedicated AI Doctor Kiosk
+              Turn Any Screen Into Your Dedicated Lumi Companion
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              With one click, hide all website tabs, sidebars, and navigation bars. RoboDoc runs in 100% full-screen immersive display with glowing responsive neon eyes, speech-to-text, and real-time visual symptom recognition.
+              Experience hands-free multimodal health consultation. Hide website borders and tabs for a 100% immersive robot screen with responsive animated eyes, speech recognition, and instant video first-aid guides.
             </p>
             <div className="pt-2">
               <Link
                 href="/login"
-                className="px-5 py-3 rounded-xl bg-neon-red hover:bg-neon-red-bright text-white text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(255,51,102,0.4)] inline-flex items-center gap-2"
+                className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#00a896] to-[#00b4d8] hover:opacity-95 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-lg inline-flex items-center gap-2"
               >
                 <Maximize2 className="w-4 h-4" />
-                <span>Experience RoboDoc Now</span>
+                <span>Launch Lumi AI Now</span>
               </Link>
             </div>
           </div>
 
           <div className="lg:w-1/2 flex items-center justify-center">
-            <div className="w-full max-w-sm aspect-video bg-[#0c0709] border-2 border-neon-red/60 rounded-3xl p-6 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(255,51,102,0.3)]">
-              <CuteNeonEyes state="speaking" statusText="RoboDoc Multimodal Sensor Online" />
+            <div className="w-full max-w-sm aspect-video bg-[#051119] border-2 border-[#00b4d8]/50 rounded-3xl p-6 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,180,216,0.25)]">
+              <CuteNeonEyes state="speaking" statusText="Lumi Companion Online" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. CALL TO ACTION & FOOTER */}
-      <section className="py-16 px-4 sm:px-8 bg-white border-t border-slate-200">
+      {/* 7. CALL TO ACTION & INTERNATIONAL FOOTER */}
+      <section className="py-20 px-4 sm:px-8 bg-white border-t border-slate-200">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Ready to Take Control of Your Family's Health Records?
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Ready to Connect Your Health?
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto">
-            Create your official Ayushman Bharat Digital Health Account (ABHA) in under 60 seconds with instant government eKYC verification.
+          <p className="text-sm text-slate-600 max-w-xl mx-auto">
+            Join thousands of individuals taking control of their lifelong medical history with proactive AI companionship.
           </p>
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              onClick={handleQuickGoogle}
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm tracking-wide shadow-xs transition-all flex items-center gap-2.5"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              <span>Sign Up with Google</span>
+            </button>
+
             <Link
               href="/login"
-              className="px-6 py-3.5 rounded-xl bg-[#0e3c5d] hover:bg-[#092b43] text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center gap-2"
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#00a896] to-[#0077b6] hover:opacity-95 text-white font-bold text-sm tracking-wide shadow-md transition-all flex items-center gap-2"
             >
-              <span>Access Your Health Vault</span>
+              <span>Access HealthThread</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Official MoHFW Style Footer */}
-      <footer className="bg-[#0b2d49] text-white py-10 px-4 sm:px-8 border-t border-sky-900/60 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-sky-200/80">
+      {/* Modern Sleek Footer */}
+      <footer className="bg-slate-900 text-white py-12 px-4 sm:px-8 border-t border-slate-800 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-slate-400">
           <div className="flex items-center gap-3">
-            <HealthThreadLogo showText={false} className="w-8 h-8" />
-            <div>
-              <p className="font-bold text-white text-sm">HealthThread</p>
-              <p className="text-[10px] text-sky-300/70">National Digital Health Records Vault · MoHFW</p>
-            </div>
+            <HealthThreadLogo isDark={true} />
           </div>
 
-          <p className="text-center text-[11px] text-sky-200/70">
-            Powered by Ayushman Bharat Digital Mission (ABDM) Standards & VitalLens Multimodal AI.
+          <p className="text-center text-[11px] text-slate-400">
+            Vault · Beacon · Lumi — Integrated Health Ecosystem. Built with HIPAA & GDPR Privacy Standards.
           </p>
 
-          <div className="flex items-center gap-4 text-[11px] text-sky-300">
-            <span>256-Bit SSL Encrypted</span>
+          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+            <span>Privacy Policy</span>
             <span>•</span>
-            <span>Zero-Knowledge Vault</span>
+            <span>Terms of Service</span>
+            <span>•</span>
+            <span>Security</span>
           </div>
         </div>
       </footer>

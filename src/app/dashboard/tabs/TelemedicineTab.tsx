@@ -244,7 +244,7 @@ export default function TelemedicineTab({ user, emergencyProfile }: { user?: any
                   <h3 className="text-sm font-bold text-white">{activeCallDoctor.name}</h3>
                   <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Live Secure Consultation (ABDM HIPAA Compliant)</span>
+                    <span>Live Secure Consultation (HIPAA & GDPR Compliant)</span>
                   </p>
                 </div>
               </div>

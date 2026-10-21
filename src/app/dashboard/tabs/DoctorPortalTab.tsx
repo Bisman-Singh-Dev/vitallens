@@ -46,8 +46,8 @@ export default function DoctorPortalTab({
 
   const currentDoc = getActiveUser();
   const doctorName = currentDoc?.role === "doctor" ? currentDoc.displayName : "Consulting Physician";
-  const doctorNmc = currentDoc?.nmcNumber || "NMC-ABDM-Verified";
-  const doctorFacility = currentDoc?.hospitalAffiliation || "National Health Network Facility";
+  const doctorNmc = currentDoc?.licenseNumber || "MD-LICENSED-GLOBAL";
+  const doctorFacility = currentDoc?.organization || "Global Health Telehealth Center";
 
   const handleIssueRx = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,20 +86,20 @@ export default function DoctorPortalTab({
     <div className="space-y-6">
       
       {/* DOCTOR BANNER */}
-      <div className="bg-[#0b2b46] rounded-2xl border border-slate-700/60 p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[#053d52] rounded-2xl border border-slate-700/60 p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-emerald-700/80 border border-emerald-500/40 flex items-center justify-center text-white shrink-0 shadow-sm">
+          <div className="w-12 h-12 rounded-xl bg-[#00a896] border border-white/20 flex items-center justify-center text-white shrink-0 shadow-sm">
             <Stethoscope className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-white">{doctorName}</h2>
               <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full">
-                ABDM Verified Practitioner
+                Board Certified Physician
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              {doctorFacility} · Reg ID: {doctorNmc}
+              {doctorFacility} · License: {doctorNmc}
             </p>
           </div>
         </div>

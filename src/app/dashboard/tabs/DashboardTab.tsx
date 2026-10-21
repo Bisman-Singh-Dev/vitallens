@@ -97,47 +97,47 @@ export default function DashboardTab({ user, setActiveTab, emergencyProfile }: D
   return (
     <div className="space-y-6">
       {/* DIGITAL HEALTH ID CARD */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0c385c] via-[#0d406b] to-[#124d7d] p-6 sm:p-7 text-white shadow-sm border border-slate-700/40">
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-white/[0.03] pointer-events-none" />
-        <div className="absolute right-28 bottom-0 -mb-20 w-60 h-60 rounded-full bg-sky-400/[0.04] pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#05668d] via-[#028090] to-[#00a896] p-6 sm:p-8 text-white shadow-md border border-white/15">
+        <div className="absolute right-0 top-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-white/[0.06] pointer-events-none" />
+        <div className="absolute right-28 bottom-0 -mb-20 w-60 h-60 rounded-full bg-[#48cae4]/[0.08] pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-bold tracking-widest text-sky-300 uppercase">
-                Digital Health ID
+              <p className="text-[11px] font-bold tracking-widest text-[#48cae4] uppercase">
+                HealthThread Universal ID
               </p>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mt-1">
                 {patientName}
               </h1>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-xs sm:text-sm text-sky-100">
               <div>
-                <span className="text-sky-300/80 block text-[11px] uppercase tracking-wider">Health ID</span>
-                <span className="font-semibold text-white tracking-wide">{healthId}</span>
+                <span className="text-sky-200/80 block text-[11px] uppercase tracking-wider">Vault ID</span>
+                <span className="font-semibold text-white tracking-wide font-mono">{healthId}</span>
               </div>
               <div>
-                <span className="text-sky-300/80 block text-[11px] uppercase tracking-wider">Phone</span>
-                <span className="font-semibold text-white tracking-wide">{phoneNumber}</span>
+                <span className="text-sky-200/80 block text-[11px] uppercase tracking-wider">Contact</span>
+                <span className="font-semibold text-white tracking-wide">{phoneNumber || activeUser?.email || "Connected"}</span>
               </div>
               <div>
-                <span className="text-sky-300/80 block text-[11px] uppercase tracking-wider">Blood Group</span>
+                <span className="text-sky-200/80 block text-[11px] uppercase tracking-wider">Blood Group</span>
                 <span className="font-semibold text-white tracking-wide">{bloodGroup.replace(" Positive", "+").replace(" Negative", "-")}</span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-row md:flex-col items-start md:items-end justify-between md:justify-center gap-3 shrink-0">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-medium text-white shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-              <span>✓ Verified Clinical Record</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-xs font-semibold text-white shadow-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#48cae4]" />
+              <span>✓ HIPAA & GDPR Secured</span>
             </div>
 
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => alert(`ABHA Health QR for ${patientName}\nID: ${healthId}\nStatus: Verified Clinical Vault`)}
-                className="px-3 py-1.5 rounded-lg bg-sky-900/60 hover:bg-sky-800/80 text-[11px] font-medium text-sky-200 border border-sky-600/40 flex items-center gap-1.5 transition-colors"
+                onClick={() => alert(`HealthThread Global Medical Card\nMember: ${patientName}\nVault ID: ${healthId}\nStatus: Verified Encrypted Vault`)}
+                className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-[11px] font-semibold text-white border border-white/25 flex items-center gap-1.5 transition-colors"
                 title="View Health QR"
               >
                 <QrCode className="w-3.5 h-3.5" />
@@ -145,7 +145,7 @@ export default function DashboardTab({ user, setActiveTab, emergencyProfile }: D
               </button>
               <button 
                 onClick={() => setActiveTab("emergency")}
-                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-medium text-white border border-white/20 flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-[11px] font-semibold text-white border border-white/25 flex items-center gap-1.5 transition-colors"
               >
                 <span>Emergency Card</span>
               </button>
