@@ -57,8 +57,12 @@ export default function DashboardPage() {
   // Sync account-specific user and emergency profile
   const syncAccountData = async () => {
     const activeU = getActiveUser();
+    if (!activeU) {
+      router.push("/login");
+      return;
+    }
     setUser(activeU);
-    const ep = await getEmergencyProfile(activeU?.id);
+    const ep = await getEmergencyProfile(activeU.id);
     setEmergencyProfile(ep);
   };
 
@@ -154,6 +158,16 @@ export default function DashboardPage() {
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
+
+  // Guard against unauthenticated session
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#0e3c5d] flex flex-col items-center justify-center text-white select-none">
+        <div className="w-8 h-8 border-3 border-white/20 border-t-white rounded-full animate-spin mb-3" />
+        <p className="text-xs text-sky-200 font-medium">Verifying National Health Vault session...</p>
+      </div>
+    );
+  }
 
   // 1. FULLSCREEN IMMERSIVE ROBODOC VIEW (No website borders, no tabs, full screen display)
   if (isRoboDocFullscreen) {

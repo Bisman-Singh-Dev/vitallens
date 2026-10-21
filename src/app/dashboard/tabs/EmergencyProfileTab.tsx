@@ -23,12 +23,12 @@ import {
 
 export default function EmergencyProfileTab({ user }: { user?: any }) {
   const [profile, setProfile] = useState<EmergencyMedicalProfile>({
-    bloodGroup: "B+ Positive",
-    knownAllergies: "Penicillin",
-    currentMedications: "Amlodipine 5mg — once daily",
-    chronicConditions: "Hypertension",
-    previousSurgeries: "Appendectomy (2005)",
-    emergencyContact: "Anita Kumar (Spouse) · +91 98111 22334"
+    bloodGroup: "Not specified",
+    knownAllergies: "None reported",
+    currentMedications: "None",
+    chronicConditions: "None",
+    previousSurgeries: "None",
+    emergencyContact: "Not provided"
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<EmergencyMedicalProfile>(profile);

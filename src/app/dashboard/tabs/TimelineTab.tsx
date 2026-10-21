@@ -235,12 +235,15 @@ export default function TimelineTab({ setActiveTab }: { setActiveTab?: (tab: str
             {!isLoading && filteredEvents.length === 0 && (
               <div className="text-center py-12 text-slate-400">
                 <FileText className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-                <p className="text-sm font-medium">No records found for "{selectedCategory}".</p>
+                <p className="text-sm font-medium text-slate-700">No clinical records found in this vault.</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Add your prescriptions, lab reports, surgeries, or doctor notes to build your lifelong chronological health timeline.
+                </p>
                 <button 
-                  onClick={() => setSelectedCategory("All")}
-                  className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
+                  onClick={() => setShowAddModal(true)}
+                  className="mt-4 px-4 py-2 bg-[#0e3c5d] text-white rounded-xl text-xs font-semibold hover:bg-[#0a2c44] transition-colors shadow-xs"
                 >
-                  View all records
+                  + Add Your First Record
                 </button>
               </div>
             )}

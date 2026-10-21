@@ -49,22 +49,29 @@ export default function DashboardTab({ user, setActiveTab, emergencyProfile }: D
     };
   }, []);
 
-  const patientName = activeUser?.displayName || "Aradhya Tripathi";
-  const healthId = activeUser?.healthId || "HT-2026-88231";
-  const phoneNumber = activeUser?.phoneNumber || "+91 98765 43210";
-  const bloodGroup = activeProfile?.bloodGroup || activeUser?.bloodGroup || "B+ Positive";
+  const patientName = activeUser?.displayName || "Patient";
+  const healthId = activeUser?.healthId || activeUser?.ekycDetails?.abhaNumber || "ABHA Pending";
+  const phoneNumber = activeUser?.phoneNumber || "Not provided";
+  const bloodGroup = activeProfile?.bloodGroup || activeUser?.bloodGroup || "Not specified";
 
-  // Calculate dynamic metrics from user's live profile & timeline
+  // Calculate dynamic metrics from user's live profile & timeline (real 0 for fresh accounts)
   const totalEventsCount = events.length;
-  const activeMedicationsCount = activeProfile?.currentMedications && activeProfile.currentMedications !== "None" 
-    ? activeProfile.currentMedications.split(",").length 
-    : 1;
-  const knownAllergiesCount = activeProfile?.knownAllergies && activeProfile.knownAllergies !== "None" 
-    ? activeProfile.knownAllergies.split(",").length 
-    : 1;
-  const chronicConditionsCount = activeProfile?.chronicConditions && activeProfile.chronicConditions !== "None" 
-    ? activeProfile.chronicConditions.split(",").length 
-    : 1;
+  const activeMedicationsCount = activeProfile?.currentMedications && 
+    activeProfile.currentMedications !== "None" && 
+    activeProfile.currentMedications !== "None reported"
+      ? activeProfile.currentMedications.split(",").filter((s: string) => s.trim().length > 0).length 
+      : 0;
+  const knownAllergiesCount = activeProfile?.knownAllergies && 
+    activeProfile.knownAllergies !== "None" && 
+    activeProfile.knownAllergies !== "None reported" && 
+    activeProfile.knownAllergies !== "None known"
+      ? activeProfile.knownAllergies.split(",").filter((s: string) => s.trim().length > 0).length 
+      : 0;
+  const chronicConditionsCount = activeProfile?.chronicConditions && 
+    activeProfile.chronicConditions !== "None" && 
+    activeProfile.chronicConditions !== "None reported"
+      ? activeProfile.chronicConditions.split(",").filter((s: string) => s.trim().length > 0).length 
+      : 0;
 
   // Show the latest 3 recent events dynamically from the timeline
   const recentEvents = events.slice(0, 3);

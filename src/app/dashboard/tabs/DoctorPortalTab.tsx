@@ -44,6 +44,11 @@ export default function DoctorPortalTab({
     }
   };
 
+  const currentDoc = getActiveUser();
+  const doctorName = currentDoc?.role === "doctor" ? currentDoc.displayName : "Consulting Physician";
+  const doctorNmc = currentDoc?.nmcNumber || "NMC-ABDM-Verified";
+  const doctorFacility = currentDoc?.hospitalAffiliation || "National Health Network Facility";
+
   const handleIssueRx = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rxDrug.trim()) return;
@@ -54,7 +59,7 @@ export default function DoctorPortalTab({
       date: new Date().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }),
       category: "Prescriptions",
       title: `${rxDrug.trim()} — Digital e-Prescription`,
-      provider: "Dr. Rajesh Sharma · Apollo Hospitals",
+      provider: `${doctorName} · ${doctorFacility}`,
       notes: `${rxDosage.trim()} | Instructions: ${rxInstructions.trim()}`,
       status: "Verified",
       iconType: "pill"
@@ -63,7 +68,7 @@ export default function DoctorPortalTab({
     if (onAddPrescription) {
       onAddPrescription({
         title: `${rxDrug.trim()} — Prescription`,
-        provider: "Dr. Rajesh Sharma · Apollo Hospitals",
+        provider: `${doctorName} · ${doctorFacility}`,
         notes: `${rxDosage.trim()} · ${rxInstructions.trim()}`
       });
     }
@@ -88,13 +93,13 @@ export default function DoctorPortalTab({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-white">Dr. Rajesh Sharma, MD</h2>
+              <h2 className="text-lg font-bold text-white">{doctorName}</h2>
               <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full">
                 ABDM Verified Practitioner
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Senior Consultant Cardiologist · Apollo Hospitals, New Delhi · Reg ID: ABDM-HP-88914
+              {doctorFacility} · Reg ID: {doctorNmc}
             </p>
           </div>
         </div>
