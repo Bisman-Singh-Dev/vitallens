@@ -28,6 +28,8 @@ import {
 import Link from "next/link";
 import { HealthThreadLogo, BrandAccentBar } from "@/components/HealthThreadLogo";
 import CuteNeonEyes from "@/components/CuteNeonEyes";
+import CircularGallery, { GalleryItem } from "@/components/CircularGallery";
+import DotField from "@/components/DotField";
 import { getActiveUser, VaultUser, signInWithGoogleAuth } from "@/lib/vaultStore";
 import { triggerPwaInstall } from "@/components/PwaInstallPrompt";
 import { useRouter } from "next/navigation";
@@ -204,21 +206,45 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION - SLEEK, COMPACT, DEPTH-PACKED WITH FLOWING GRADIENT */}
-      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-8 border-b border-slate-200/70 bg-gradient-to-b from-[#f0f9ff]/80 via-white to-[#fafcfd]">
+      {/* 3. HERO SECTION - SLEEK, COMPACT, DEPTH-PACKED WITH INTERACTIVE DOTFIELD */}
+      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-8 border-b border-slate-200/70 bg-gradient-to-b from-[#f0f9ff]/70 via-white to-[#fafcfd]">
         
-        {/* Animated Flowing Gradient Mesh Orbs */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[720px] h-[440px] bg-gradient-to-tr from-[#00a896]/15 via-[#48cae4]/20 to-[#0077b6]/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
-        <div className="absolute top-20 left-10 w-64 h-64 bg-[#48cae4]/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute top-10 right-10 w-72 h-72 bg-[#0077b6]/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Interactive DotField Canvas Background */}
+        <div className="absolute inset-0 pointer-events-auto opacity-75 z-0">
+          <DotField
+            gradientFrom="#00a896"
+            gradientTo="#0077b6"
+            dotRadius={1.5}
+            dotSpacing={14}
+            cursorRadius={240}
+            bulgeStrength={0.6}
+            glowRadius={160}
+            pattern="grid"
+            glowColor="#ffffff"
+            gradientAngle={135}
+            twist={0}
+            glowIntensity={0.8}
+            baseOpacity={0.45}
+            waveAmplitude={0}
+            speed={1}
+            sparkle={false}
+            interactive
+            holdToZoom
+            intro
+            lightMode={true}
+          />
+        </div>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-5">
+        {/* Soft Ambient Brand Color Blobs */}
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[720px] h-[440px] bg-gradient-to-tr from-[#00a896]/15 via-[#48cae4]/20 to-[#0077b6]/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
+
+        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-5 pointer-events-none">
           
           {/* Ecosystem Pill with glowing dot */}
           <motion.div 
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-teal-200/80 shadow-xs text-xs font-semibold text-slate-700 hover:border-teal-400 transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-teal-200/80 shadow-xs text-xs font-semibold text-slate-700 hover:border-teal-400 transition-colors pointer-events-auto"
           >
             <span className="w-2 h-2 rounded-full bg-[#00a896] animate-ping" />
             <span className="text-[#00a896] font-bold">HealthThread Ecosystem</span>
@@ -254,7 +280,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex flex-wrap items-center justify-center gap-3 pt-2"
+            className="flex flex-wrap items-center justify-center gap-3 pt-2 pointer-events-auto"
           >
             <button
               onClick={handleQuickGoogle}
@@ -530,6 +556,46 @@ export default function LandingPage() {
 
         </div>
 
+      </section>
+
+      {/* 4.5 CIRCULAR GALLERY 3D IMMERSIVE SHOWCASE (REQUESTED ANIMATION) */}
+      <section className="py-12 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+        <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#00b4d8] bg-cyan-50 px-3 py-1 rounded-full border border-cyan-200">
+            Interactive 3D Experience
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Explore the HealthThread Universe
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600">
+            Drag, scroll, or tap each card to discover multimodal health monitoring, lifelong clinical records, and Lumi AI companion.
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-b from-slate-950 via-slate-900 to-[#031d28] shadow-2xl overflow-hidden p-2">
+          <div style={{ height: '600px', position: 'relative' }}>
+            <CircularGallery
+              bend={3}
+              textColor="#ffffff"
+              borderRadius={0.05}
+              scrollEase={0.05}
+              onItemClick={(item, index) => console.log(item.text, index)}
+              itemSize={1}
+              itemAspect={0.78}
+              gap={0.26}
+              wave={1}
+              fadeEdges={0.12}
+              shadow={0.25}
+              scrollSpeed={2}
+              autoScroll={0}
+              snap
+              grayscale={false}
+              showTitles
+              openOnClick
+              intro
+            />
+          </div>
+        </div>
       </section>
 
       {/* 5. HOW IT ALL WORKS TOGETHER - DYNAMIC FLOWING ANIMATION */}
