@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut, Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { X, ThumbsUp, Camera, History, Bell, User, LogIn, LogOut, Eye, EyeOff, ShieldAlert, Maximize2, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
 import CuteNeonEyes, { EyeState } from "@/components/CuteNeonEyes";
@@ -12,12 +12,16 @@ export default function AIDiagnosticsTab({
   user, 
   setActiveTab, 
   setStartVoiceAlarmFlow,
-  onVoiceLogin
+  onVoiceLogin,
+  onToggleFullscreen,
+  isFullscreen
 }: { 
   user: any; 
   setActiveTab?: (id: string) => void; 
   setStartVoiceAlarmFlow?: (val: boolean) => void;
   onVoiceLogin?: (userName: string) => void;
+  onToggleFullscreen?: () => void;
+  isFullscreen?: boolean;
 }) {
   const [messages, setMessages] = useState<{ role: string; content: string; hasImage?: boolean }[]>([]);
   const [input, setInput] = useState("");
@@ -801,6 +805,27 @@ export default function AIDiagnosticsTab({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Hide Website Tabs / Fullscreen Robot toggle */}
+          {onToggleFullscreen && (
+            <button
+              onClick={onToggleFullscreen}
+              className="px-3 py-1.5 rounded-full bg-red-950/70 hover:bg-neon-red text-white text-xs font-semibold border border-neon-red/50 flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(255,51,102,0.3)] hover:scale-105"
+              title={isFullscreen ? "Show Website Tabs" : "Hide Website Tabs and Make Screen Fully Robot"}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-white" />
+                  <span className="hidden sm:inline">Show Tabs</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-white" />
+                  <span className="hidden sm:inline">Hide Tabs (Full Robot Screen)</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Toggle Visibility Button */}
           <button

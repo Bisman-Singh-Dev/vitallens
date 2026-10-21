@@ -40,9 +40,13 @@ import { getActiveUser, getEmergencyProfile, VaultUser, EmergencyMedicalProfile 
 export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const [user, setUser] = useState<VaultUser | null>(null);
+  const [user, setUser] = useState<VaultUser | null>(() => {
+    if (typeof window !== "undefined") {
+      return getActiveUser();
+    }
+    return null;
+  });
   const [emergencyProfile, setEmergencyProfile] = useState<EmergencyMedicalProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   
@@ -56,7 +60,6 @@ export default function DashboardPage() {
     setUser(activeU);
     const ep = await getEmergencyProfile(activeU?.id);
     setEmergencyProfile(ep);
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -152,16 +155,8 @@ export default function DashboardPage() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-slate-300 border-t-[#0e3c5d] rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   // 1. FULLSCREEN IMMERSIVE ROBODOC VIEW (No website borders, no tabs, full screen display)
-  if (isRoboDocFullscreen && activeTab === "ai-diagnostics") {
+  if (isRoboDocFullscreen) {
     return (
       <div className="fixed inset-0 z-50 w-screen h-screen bg-[#050507] text-white flex flex-col overflow-hidden select-none">
         {/* Floating Top Floating Bar to exit or toggle website tabs */}
@@ -191,6 +186,8 @@ export default function DashboardPage() {
           <AIDiagnosticsTab 
             user={user} 
             setActiveTab={setActiveTab} 
+            onToggleFullscreen={() => setIsRoboDocFullscreen(false)}
+            isFullscreen={true}
           />
         </div>
       </div>
@@ -404,17 +401,18 @@ export default function DashboardPage() {
             {/* Top Right Badges & Fullscreen Action */}
             <div className="flex items-center gap-2.5 relative">
               
-              {/* Fullscreen Button for RoboDoc / Focus Mode */}
-              {activeTab === "ai-diagnostics" && (
-                <button
-                  onClick={() => setIsRoboDocFullscreen(true)}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-semibold shadow-xs transition-all"
-                  title="Make Screen Fully Robot View (Hide Website Tabs)"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Full Screen Device Mode</span>
-                </button>
-              )}
+              {/* Fullscreen Button for RoboDoc Device Mode (Hide Tabs) */}
+              <button
+                onClick={() => {
+                  setActiveTab("ai-diagnostics");
+                  setIsRoboDocFullscreen(true);
+                }}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-semibold shadow-xs transition-all border border-slate-700 hover:scale-105"
+                title="Make Screen Fully Robot View (Hide Website Tabs)"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+                <span>Robot Screen (Hide Tabs)</span>
+              </button>
 
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] text-[#047857] text-xs font-semibold shadow-2xs">
                 <span>✓ eKYC Verified</span>
@@ -555,6 +553,8 @@ export default function DashboardPage() {
                       <AIDiagnosticsTab 
                         user={user} 
                         setActiveTab={setActiveTab} 
+                        onToggleFullscreen={() => setIsRoboDocFullscreen(true)}
+                        isFullscreen={false}
                       />
                     </div>
                   </div>

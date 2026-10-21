@@ -301,6 +301,13 @@ export async function setActiveUser(user: VaultUser) {
   }
 }
 
+const withTimeout = <T>(promise: Promise<T>, timeoutMs = 1200): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), timeoutMs))
+  ]);
+};
+
 /**
  * 2. ACCOUNT-SPECIFIC EMERGENCY PROFILE (Stored by userId)
  */
@@ -308,11 +315,21 @@ export async function getEmergencyProfile(userId?: string): Promise<EmergencyMed
   const uid = userId || getActiveUser().id;
   const storageKey = `vault_emergency_${uid}`;
 
-  // 1. Fetch from Firestore
+  // 1. Check local storage first for instant response
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {}
+    }
+  }
+
+  // 2. Fetch from Firestore with timeout
   try {
     if (db && uid) {
       const ref = doc(db, "users", uid, "vault", "emergency_profile");
-      const snap = await getDoc(ref);
+      const snap = await withTimeout(getDoc(ref), 1200);
       if (snap.exists()) {
         const data = snap.data() as EmergencyMedicalProfile;
         if (typeof window !== "undefined") {
@@ -322,17 +339,7 @@ export async function getEmergencyProfile(userId?: string): Promise<EmergencyMed
       }
     }
   } catch (err) {
-    console.warn("Firestore emergency profile fetch error:", err);
-  }
-
-  // 2. Fetch from Local Storage for THIS user
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {}
-    }
+    // Graceful fallback to local storage / seed
   }
 
   // 3. Fallback to seed for known demo accounts or blank for new users
@@ -384,12 +391,36 @@ export async function getTimelineEvents(userId?: string): Promise<ClinicalTimeli
   const uid = userId || getActiveUser().id;
   const storageKey = `vault_timeline_${uid}`;
 
-  // 1. Fetch from Firestore
+  // 1. Fetch from Local Storage for THIS user first for instant load
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Asynchronously sync with Firestore in background without blocking
+          if (db && uid) {
+            const colRef = collection(db, "users", uid, "timeline");
+            const q = query(colRef, orderBy("year", "desc"));
+            withTimeout(getDocs(q), 1200).then(snap => {
+              if (!snap.empty) {
+                const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ClinicalTimelineItem[];
+                localStorage.setItem(storageKey, JSON.stringify(items));
+              }
+            }).catch(() => {});
+          }
+          return parsed;
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 2. Fetch from Firestore if no local cache
   try {
     if (db && uid) {
       const colRef = collection(db, "users", uid, "timeline");
       const q = query(colRef, orderBy("year", "desc"));
-      const snap = await getDocs(q);
+      const snap = await withTimeout(getDocs(q), 1200);
       if (!snap.empty) {
         const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ClinicalTimelineItem[];
         if (typeof window !== "undefined") {
@@ -399,17 +430,7 @@ export async function getTimelineEvents(userId?: string): Promise<ClinicalTimeli
       }
     }
   } catch (err) {
-    console.warn("Firestore timeline fetch error:", err);
-  }
-
-  // 2. Fetch from Local Storage for THIS user
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {}
-    }
+    // Fallback to seed
   }
 
   // 3. Fallback to seed for known demo accounts or empty list for new users
@@ -479,11 +500,34 @@ export async function getConsents(userId?: string): Promise<ConsentAuthorization
   const uid = userId || getActiveUser().id;
   const storageKey = `vault_consents_${uid}`;
 
-  // 1. Fetch from Firestore
+  // 1. Fetch from Local Storage for THIS user first
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Asynchronously sync with Firestore in background without blocking
+          if (db && uid) {
+            const colRef = collection(db, "users", uid, "consents");
+            withTimeout(getDocs(colRef), 1200).then(snap => {
+              if (!snap.empty) {
+                const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ConsentAuthorization[];
+                localStorage.setItem(storageKey, JSON.stringify(items));
+              }
+            }).catch(() => {});
+          }
+          return parsed;
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 2. Fetch from Firestore if no local cache
   try {
     if (db && uid) {
       const colRef = collection(db, "users", uid, "consents");
-      const snap = await getDocs(colRef);
+      const snap = await withTimeout(getDocs(colRef), 1200);
       if (!snap.empty) {
         const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ConsentAuthorization[];
         if (typeof window !== "undefined") {
@@ -493,17 +537,7 @@ export async function getConsents(userId?: string): Promise<ConsentAuthorization
       }
     }
   } catch (err) {
-    console.warn("Firestore consents fetch error:", err);
-  }
-
-  // 2. Fetch from Local Storage for THIS user
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {}
-    }
+    // Fallback to seed
   }
 
   const defaultConsents = SEED_CONSENTS[uid] || [];
