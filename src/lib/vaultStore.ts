@@ -150,7 +150,20 @@ export function getActiveUser(): VaultUser | null {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      if (parsed && parsed.id) return parsed;
+      if (parsed && parsed.id) {
+        // Discard any stale demo accounts from previous sessions
+        if (
+          parsed.displayName === "Shashank Kumar" || 
+          parsed.displayName === "Aradhya Tripathi" ||
+          parsed.id === "shashank_demo" ||
+          parsed.id === "aradhya_demo"
+        ) {
+          localStorage.removeItem("vitallens_active_user");
+          localStorage.removeItem("vitallens_emergency_profile");
+          return null;
+        }
+        return parsed;
+      }
     } catch (e) {}
   }
 

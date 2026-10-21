@@ -82,51 +82,106 @@ export default function AIDiagnosticsTab({
     initModel();
   }, []);
 
-  // Voice Speech Synthesis: Always speaks out loud without delay
-  const playDirectTTS = (text: string, onEnd?: () => void) => {
+  // Voice Speech Synthesis: Speaks using high quality Deepgram female voice (aura-asteria-en) with browser fallback
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playDirectTTS = async (text: string, onEnd?: () => void) => {
     isTTSPlayingRef.current = true;
     setIsTTSPlaying(true);
-    
+
+    // Stop any existing active speech
+    if (activeAudioRef.current) {
+      try {
+        activeAudioRef.current.pause();
+        activeAudioRef.current.src = "";
+      } catch (e) {}
+      activeAudioRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
 
-      const cleanSpokenText = text
-        .replace(/<<([^>>]+)>>/g, "$1")
-        .replace(/\*/g, "")
-        .replace(/#/g, "")
-        .replace(/EMERGENCY_REDIRECT:[^\n]+/gi, "");
+    const cleanSpokenText = text
+      .replace(/<<([^>>]+)>>/g, "$1")
+      .replace(/\*/g, "")
+      .replace(/#/g, "")
+      .replace(/EMERGENCY_REDIRECT:[^\n]+/gi, "")
+      .trim();
 
-      const utterance = new SpeechSynthesisUtterance(cleanSpokenText);
-      utterance.lang = language === "hi" ? "hi-IN" : "en-US";
-      utterance.rate = 1.05; 
-      
-      if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
-      (window as any).synthUtterances.push(utterance);
-
-      let ended = false;
-      const handleEnd = () => {
-        if (ended) return;
-        ended = true;
-        isTTSPlayingRef.current = false;
-        setIsTTSPlaying(false);
-        if (onEnd) onEnd();
-      };
-
-      utterance.onend = handleEnd;
-      utterance.onerror = handleEnd;
-      window.speechSynthesis.speak(utterance);
-
-      const estimatedTimeMs = (cleanSpokenText.length * 85) + 3000;
-      setTimeout(() => {
-        if (!ended) {
-          try { window.speechSynthesis.cancel(); } catch(e){}
-          handleEnd();
-        }
-      }, Math.min(estimatedTimeMs, 30000));
-    } else {
+    if (!cleanSpokenText) {
       isTTSPlayingRef.current = false;
       setIsTTSPlaying(false);
       if (onEnd) onEnd();
+      return;
+    }
+
+    let finished = false;
+    const finalize = () => {
+      if (finished) return;
+      finished = true;
+      isTTSPlayingRef.current = false;
+      setIsTTSPlaying(false);
+      activeAudioRef.current = null;
+      if (onEnd) onEnd();
+    };
+
+    try {
+      // 1. Try Deepgram Aura Asteria Female Voice
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanSpokenText })
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        activeAudioRef.current = audio;
+
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          finalize();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          finalize();
+        };
+
+        await audio.play();
+        return;
+      }
+    } catch (e) {
+      console.warn("Deepgram TTS streaming fallback to browser speech synthesis:", e);
+    }
+
+    // 2. Fallback to browser SpeechSynthesis (pick female voice if available)
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(cleanSpokenText);
+      utterance.lang = language === "hi" ? "hi-IN" : "en-US";
+      utterance.rate = 1.02;
+
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(v => 
+        (v.name.includes("Female") || v.name.includes("Samantha") || v.name.includes("Zira") || v.name.includes("Victoria") || v.name.includes("Google UK English Female") || v.name.includes("Microsoft Jenny"))
+      );
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+
+      utterance.onend = finalize;
+      utterance.onerror = finalize;
+
+      if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
+      (window as any).synthUtterances.push(utterance);
+      window.speechSynthesis.speak(utterance);
+
+      const maxTimeMs = Math.min((cleanSpokenText.length * 90) + 4000, 35000);
+      setTimeout(() => {
+        if (!finished) finalize();
+      }, maxTimeMs);
+    } else {
+      finalize();
     }
   };
 

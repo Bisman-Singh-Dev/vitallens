@@ -27,54 +27,100 @@ export default function HealthManagerTab({ user, setActiveTab }: { user: any, se
   const backgroundVideoRef = useRef<HTMLVideoElement>(null);
   const [gestureRecognizer, setGestureRecognizer] = useState<GestureRecognizer | null>(null);
 
-  const speakText = (text: string, onEnd?: () => void) => {
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speakText = async (text: string, onEnd?: () => void) => {
     isTTSPlayingRef.current = true;
     setIsTTSPlaying(true);
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch(e){}
     }
-    
+    if (activeAudioRef.current) {
+      try {
+        activeAudioRef.current.pause();
+        activeAudioRef.current.src = "";
+      } catch (e) {}
+      activeAudioRef.current = null;
+    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ""));
-      utterance.lang = "en-US";
-      utterance.rate = 1.1;
-      
-      if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
-      (window as any).synthUtterances.push(utterance);
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
 
-      let ended = false;
-      const handleEnd = () => {
-        if (ended) return;
-        ended = true;
-        isTTSPlayingRef.current = false;
-        setIsTTSPlaying(false);
-        if (onEnd) onEnd();
-        if (recognitionRef.current) { 
-          try { recognitionRef.current.start(); } catch(e){} 
-        }
-      };
-
-      utterance.onend = handleEnd;
-      utterance.onerror = handleEnd;
-      window.speechSynthesis.speak(utterance);
-
-      const estimatedTimeMs = (text.length * 85) + 2000;
-      setTimeout(() => {
-        if (!ended) {
-          try { window.speechSynthesis.cancel(); } catch(e){}
-          handleEnd();
-        }
-      }, Math.min(estimatedTimeMs, 10000));
-    } else {
+    const clean = text.replace(/\*/g, "").replace(/#/g, "").trim();
+    if (!clean) {
       isTTSPlayingRef.current = false;
       setIsTTSPlaying(false);
       if (onEnd) onEnd();
-      if (recognitionRef.current) { 
-        try { recognitionRef.current.start(); } catch(e){} 
+      return;
+    }
+
+    let finished = false;
+    const finalize = () => {
+      if (finished) return;
+      finished = true;
+      isTTSPlayingRef.current = false;
+      setIsTTSPlaying(false);
+      activeAudioRef.current = null;
+      if (onEnd) onEnd();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch(e){}
       }
+    };
+
+    try {
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean })
+      });
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        activeAudioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          finalize();
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl);
+          finalize();
+        };
+        await audio.play();
+        return;
+      }
+    } catch (e) {
+      console.warn("Deepgram TTS fallback:", e);
+    }
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.lang = "en-US";
+      utterance.rate = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(v => 
+        (v.name.includes("Female") || v.name.includes("Samantha") || v.name.includes("Zira") || v.name.includes("Victoria") || v.name.includes("Microsoft Jenny"))
+      );
+      if (femaleVoice) utterance.voice = femaleVoice;
+
+      utterance.onend = finalize;
+      utterance.onerror = finalize;
+
+      if (!(window as any).synthUtterances) (window as any).synthUtterances = [];
+      (window as any).synthUtterances.push(utterance);
+      window.speechSynthesis.speak(utterance);
+
+      const maxTimeMs = Math.min((clean.length * 90) + 4000, 35000);
+      setTimeout(() => {
+        if (!finished) finalize();
+      }, maxTimeMs);
+    } else {
+      finalize();
     }
   };
+
+
 
   const getLlamaTime = async (transcript: string) => {
     try {
