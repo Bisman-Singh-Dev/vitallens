@@ -7,11 +7,18 @@
   --color-brand-700: #e11d48;
   --color-brand-900: #881337;
 
+  /* HealthThread National Digital Health Palette */
+  --color-ht-navy: #0e3c5d;
+  --color-ht-navy-dark: #0a2d48;
+  --color-ht-navy-light: #164e75;
+  --color-ht-orange: #ea580c;
+  --color-ht-green: #16a34a;
+
   --color-neutral-dark: #09090b;
-  --color-background: #050507;
-  --color-foreground: #ffffff;
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
   
-  /* Vibrant Neon Red Theme */
+  /* Vibrant Neon Red Theme for AI features */
   --color-neon-red: #ff3366;
   --color-neon-red-bright: #ff4d7d;
   --color-neon-red-dim: #c71f49;
@@ -22,10 +29,8 @@
 }
 
 :root {
-  --background: #050507;
-  --foreground: #ffffff;
-  --neon-red: #ff3366;
-  --neon-red-glow: 0 0 25px rgba(255, 51, 102, 0.7), 0 0 50px rgba(255, 51, 102, 0.35);
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 body {
@@ -36,28 +41,50 @@ body {
   overflow-x: hidden;
 }
 
-/* Neon Red Gradients & Glow Effects */
-.brand-gradient {
-  background: linear-gradient(135deg, #ff3366 0%, #e11d48 50%, #9f1239 100%);
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-.brand-gradient-text {
-  background: linear-gradient(135deg, #ffffff 0%, #fda4af 40%, #ff3366 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* HealthThread UI styles */
+.ht-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 
-.neon-red-glow {
-  box-shadow: 0 0 25px rgba(255, 51, 102, 0.5), 0 0 50px rgba(255, 51, 102, 0.25);
+.ht-pill-red {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
-.neon-red-border {
-  border-color: rgba(255, 51, 102, 0.4);
+.ht-pill-green {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
-.neon-red-card {
-  background: rgba(18, 10, 14, 0.85);
-  border: 1px solid rgba(255, 51, 102, 0.25);
-  backdrop-filter: blur(16px);
+.ht-pill-blue {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.ht-pill-slate {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
 }

@@ -15,11 +15,13 @@ import {
   Mic, 
   ShieldCheck, 
   Scan, 
-  Cpu
+  Cpu,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import CuteNeonEyes from "@/components/CuteNeonEyes";
+import { triggerPwaInstall } from "@/components/PwaInstallPrompt";
 
 export default function LandingPage() {
   return (
@@ -40,33 +42,44 @@ export default function LandingPage() {
       </div>
 
       {/* Top Navbar */}
-      <header className="w-full max-w-7xl mx-auto py-6 px-6 relative z-20 flex items-center justify-between">
+      <header className="w-full max-w-7xl mx-auto py-5 px-6 relative z-20 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-black/80 border border-neon-red/40 flex items-center justify-center text-white shadow-[0_0_20px_rgba(255,51,102,0.4)]">
-            <HeartPulse className="w-5 h-5 text-neon-red" />
-          </div>
-          <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-red-200 to-neon-red drop-shadow-[0_0_12px_rgba(255,51,102,0.6)]">
-            ROBODOC
-          </span>
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-950/60 text-red-300 border border-red-500/40">
-            VitalLens AI
-          </span>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#0b2c47] border border-sky-400/50 flex items-center justify-center text-white shadow-md">
+              <HeartPulse className="w-5 h-5 text-sky-400" />
+            </div>
+            <div>
+              <span className="text-lg font-bold tracking-tight text-white block leading-tight">
+                HealthThread
+              </span>
+              <span className="text-[10px] text-sky-300 font-semibold uppercase tracking-wider block">
+                VitalLens AI Vault
+              </span>
+            </div>
+          </Link>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={() => triggerPwaInstall()}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full border border-slate-700 bg-black/60 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-white transition-all"
+          >
+            <Download className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden xs:inline">Download</span> App
+          </button>
           <Link
             href="/login"
-            className="text-xs uppercase tracking-wider font-semibold text-red-300 hover:text-white transition-colors"
+            className="text-xs uppercase tracking-wider font-semibold text-slate-300 hover:text-white transition-colors hidden sm:inline"
           >
             Sign In
           </Link>
           <Link href="/dashboard">
             <motion.button 
-              whileHover={{ scale: 1.03, boxShadow: "0 0 25px rgba(255,51,102,0.6)" }}
+              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="px-5 py-2.5 rounded-full bg-neon-red hover:bg-neon-red-bright text-white font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(255,51,102,0.4)] flex items-center gap-1.5"
+              className="px-4 sm:px-5 py-2.5 rounded-full bg-[#d95914] hover:bg-[#c24e0f] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1.5"
             >
-              Launch App <ArrowRight className="w-3.5 h-3.5" />
+              Enter Vault <ArrowRight className="w-3.5 h-3.5" />
             </motion.button>
           </Link>
         </div>
@@ -131,6 +144,16 @@ export default function LandingPage() {
                 Sign In / Login
               </motion.button>
             </Link>
+
+            <motion.button 
+              onClick={() => triggerPwaInstall()}
+              whileHover={{ scale: 1.04, backgroundColor: "rgba(255,51,102,0.2)" }}
+              whileTap={{ scale: 0.96 }}
+              className="px-7 py-4 bg-neon-red/15 border border-neon-red/50 hover:border-neon-red text-white font-extrabold text-sm uppercase tracking-wider rounded-2xl shadow-[0_0_20px_rgba(255,51,102,0.25)] flex items-center gap-2.5 w-full sm:w-auto justify-center transition-all backdrop-blur-md"
+            >
+              <Download className="w-4 h-4 text-neon-red" />
+              <span>Download App</span>
+            </motion.button>
           </motion.div>
 
           {/* Feature Badges */}

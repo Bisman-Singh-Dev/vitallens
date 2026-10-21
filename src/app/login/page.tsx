@@ -1,130 +1,108 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { auth, googleProvider, db } from "@/lib/firebase";
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Stethoscope, Lock, Mail, User, ShieldCheck, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
-import Link from "next/link";
+import { 
+  ShieldCheck, 
+  User, 
+  Stethoscope, 
+  ArrowRight, 
+  CheckCircle2, 
+  Lock, 
+  Smartphone, 
+  FileText,
+  Sparkles,
+  HeartPulse
+} from "lucide-react";
+import { HealthThreadLogo } from "@/components/HealthThreadLogo";
+import { auth, googleProvider, db } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isSignup, setIsSignup] = useState(false);
-  const [customName, setCustomName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+
+  // Role Tab: "patient" vs "doctor"
+  const [role, setRole] = useState<"patient" | "doctor">("patient");
+
+  // Sub Tab: "ekyc" vs "otp"
+  const [authMethod, setAuthMethod] = useState<"ekyc" | "otp">("ekyc");
+
+  // Form Fields (Image 4 defaults)
+  const [fullName, setFullName] = useState("Aradhya Tripathi");
+  const [identityNumber, setIdentityNumber] = useState("4210 8842 7731");
+  const [mobileNumber, setMobileNumber] = useState("+91 98765 43210");
+  const [otpCode, setOtpCode] = useState("482910");
+
   const [isLoading, setIsLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(true); // matching image 4 where "✓ OTP sent — for this demo, verification is instant." is shown
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("mode") === "signup") {
-        setIsSignup(true);
-      }
-    }
-  }, []);
-
-  // Quick preset voice test credentials or direct login
-  const handleQuickDemoLogin = (demoName: string) => {
-    const demoUser = {
-      id: "rohan_demo",
-      displayName: demoName,
-      email: `${demoName.toLowerCase()}@vitallens.health`,
-      isVoiceLoggedIn: true,
-      onboardingComplete: true
-    };
-    if (typeof window !== "undefined") {
-      localStorage.setItem("vitallens_active_user", JSON.stringify(demoUser));
-    }
-    router.push("/dashboard");
-  };
-
-  const handleManualEmailAuth = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!email.trim() || !password.trim()) {
-      setError("Please fill in both email and password.");
-      return;
-    }
-
-    if (isSignup && !customName.trim()) {
-      setError("Please provide your full name.");
-      return;
-    }
-
-    // Special check for user's voice credentials "Rohan" and password
-    const lowerName = customName.trim().toLowerCase();
-    const lowerEmail = email.trim().toLowerCase();
-    if (lowerName === "rohan" || lowerEmail.startsWith("rohan")) {
-      handleQuickDemoLogin("Rohan");
-      return;
-    }
-
-    // Check stored account info and linked password
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("vitallens_active_user");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const emailMatch = parsed.email && parsed.email.toLowerCase() === lowerEmail;
-          const nameMatch = parsed.displayName && parsed.displayName.toLowerCase() === lowerEmail.split("@")[0];
-          if ((emailMatch || nameMatch) && parsed.password && parsed.password === password) {
-            localStorage.setItem("vitallens_active_user", JSON.stringify({
-              ...parsed,
-              isLoggedIn: true
-            }));
-            router.push("/dashboard");
-            return;
-          }
-        } catch (e) {}
-      }
-    }
-
     setIsLoading(true);
 
-    try {
-      if (isSignup) {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCred.user, { displayName: customName.trim() });
-        
-        const userDocRef = doc(db, "users", userCred.user.uid);
-        await setDoc(userDocRef, {
-          email: userCred.user.email,
-          displayName: customName.trim(),
-          createdAt: new Date().toISOString(),
-          onboardingComplete: true
-        });
+    const activeUser = {
+      id: role === "doctor" ? "dr_rajesh_sharma" : "aradhya_tripathi",
+      displayName: fullName.trim() || (role === "doctor" ? "Dr. Rajesh Sharma" : "Aradhya Tripathi"),
+      email: role === "doctor" ? "rajesh.sharma@apollohospitals.com" : "aradhya.tripathi@healthvault.in",
+      healthId: "HT-2026-88231",
+      phoneNumber: mobileNumber,
+      bloodGroup: "B+",
+      role: role,
+      isVerified: true
+    };
 
-        if (typeof window !== "undefined") {
-          localStorage.setItem("vitallens_active_user", JSON.stringify({
-            id: userCred.user.uid,
-            displayName: customName.trim(),
-            email: userCred.user.email
-          }));
-        }
-        router.push("/dashboard");
-      } else {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("vitallens_active_user", JSON.stringify({
-            id: userCred.user.uid,
-            displayName: userCred.user.displayName || "User",
-            email: userCred.user.email
-          }));
-        }
-        router.push("/dashboard");
-      }
-    } catch (err: any) {
-      console.warn("Firebase Auth fallback triggered:", err.message);
-      // Graceful fallback for local development or sandbox without full auth rules
-      const fallbackName = isSignup ? customName.trim() : email.split("@")[0];
-      handleQuickDemoLogin(fallbackName || "Rohan");
-    } finally {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vitallens_active_user", JSON.stringify(activeUser));
+      window.dispatchEvent(new Event("vitallens_user_updated"));
+    }
+
+    setTimeout(() => {
       setIsLoading(false);
+      router.push("/dashboard");
+    }, 400);
+  };
+
+  const handleSelectDemo = (demoType: "patient" | "doctor") => {
+    if (demoType === "patient") {
+      setRole("patient");
+      setFullName("Shashank Kumar");
+      setIdentityNumber("5190 2841 9912");
+      const userObj = {
+        id: "shashank_kumar",
+        displayName: "Shashank Kumar",
+        email: "shashank.kumar@healthvault.in",
+        healthId: "HT-2026-44102",
+        phoneNumber: "+91 98112 33445",
+        bloodGroup: "O+",
+        role: "patient",
+        isVerified: true
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
+        window.dispatchEvent(new Event("vitallens_user_updated"));
+      }
+      router.push("/dashboard");
+    } else {
+      setRole("doctor");
+      setFullName("Dr. Rajesh Sharma");
+      setIdentityNumber("HP-99214-ABDM");
+      const userObj = {
+        id: "dr_rajesh_sharma",
+        displayName: "Dr. Rajesh Sharma",
+        email: "rajesh.sharma@apollohospitals.com",
+        healthId: "HP-99214-ABDM",
+        phoneNumber: "+91 98100 12345",
+        bloodGroup: "A+",
+        role: "doctor",
+        isVerified: true
+      };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
+        window.dispatchEvent(new Event("vitallens_user_updated"));
+      }
+      router.push("/dashboard");
     }
   };
 
@@ -134,206 +112,291 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (!userDoc.exists()) {
-        await setDoc(userDocRef, {
-          email: user.email,
-          displayName: user.displayName || customName.trim() || "User",
-          photoURL: user.photoURL,
-          onboardingComplete: true,
-          createdAt: new Date().toISOString()
-        });
-      }
+
+      const userObj = {
+        id: user.uid,
+        displayName: user.displayName || "Aradhya Tripathi",
+        email: user.email,
+        photoURL: user.photoURL,
+        healthId: "HT-2026-88231",
+        phoneNumber: "+91 98765 43210",
+        bloodGroup: "B+",
+        role: "patient",
+        isVerified: true
+      };
 
       if (typeof window !== "undefined") {
-        localStorage.setItem("vitallens_active_user", JSON.stringify({
-          id: user.uid,
-          displayName: user.displayName || "User",
-          email: user.email,
-          photoURL: user.photoURL
-        }));
+        localStorage.setItem("vitallens_active_user", JSON.stringify(userObj));
+        window.dispatchEvent(new Event("vitallens_user_updated"));
       }
-
       router.push("/dashboard");
     } catch (err: any) {
-      console.error("Google Auth error:", err);
-      // If popup is blocked or offline, still offer seamless entry
-      setError("Google sign-in was interrupted. You can also log in directly with Email or Voice.");
+      console.warn("Google sign-in popup bypassed; logging in directly for demo:", err);
+      handleSelectDemo("patient");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="flex-1 flex items-center justify-center min-h-screen bg-[#070709] px-4 py-12 relative overflow-hidden select-none">
-      {/* Ambient background glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-slate-400/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-slate-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <main className="min-h-screen w-full flex items-center justify-center bg-[#07243c] p-2 sm:p-6 md:p-10 select-none">
+      
+      {/* CARD CONTAINER (Image 4 Dual-Pane) */}
+      <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-2 border border-slate-700/50 min-h-[640px]">
+        
+        {/* LEFT PANE: BRAND & NATIONAL MISSION DETAILS (Image 4 Left) */}
+        <div className="bg-[#0b2d49] text-white p-8 sm:p-12 flex flex-col justify-between relative overflow-hidden">
+          
+          {/* Subtle Ashoka Chakra / Sunburst radial rays */}
+          <div className="absolute -bottom-20 -left-20 w-[420px] h-[420px] rounded-full border border-sky-400/10 pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 w-[320px] h-[320px] rounded-full border border-sky-400/10 pointer-events-none" />
+          <div className="absolute bottom-10 left-10 w-[200px] h-[200px] rounded-full border border-sky-400/10 pointer-events-none" />
 
-      <motion.div 
-        initial={{ opacity: 0, y: 25 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="max-w-md w-full bg-neutral-900/90 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-[0_0_50px_rgba(226,232,240,0.08)] border border-slate-700/60 relative z-10"
-      >
-        {/* Logo & Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 bg-black border-2 border-slate-400/60 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(226,232,240,0.2)] mb-4 group">
-            <Stethoscope className="w-8 h-8 text-white transition-transform group-hover:scale-110" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            {isSignup ? "Create RoboDoc Account" : "Welcome Back"}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1.5 max-w-xs">
-            {isSignup 
-              ? "Join the Next-Gen Multimodal AI Health Assistant." 
-              : "Sign in with Google, credentials, or speak to your voice agent."}
-          </p>
-        </div>
-
-        {/* Error notification */}
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -5 }} 
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-3.5 bg-red-950/40 border border-red-500/40 text-red-300 rounded-xl text-xs flex items-center gap-2.5"
-          >
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-
-        {/* Google Authentication Button */}
-        <button
-          onClick={handleGoogleSignIn}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-black hover:bg-neutral-800 text-white font-semibold py-3.5 px-4 rounded-xl border border-slate-700 hover:border-slate-500 transition-all shadow-[0_0_20px_rgba(226,232,240,0.05)] disabled:opacity-50 mb-6 group"
-        >
-          {isLoading ? (
-            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <svg className="w-5 h-5 group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-            </svg>
-          )}
-          <span className="text-sm">Continue with Google</span>
-        </button>
-
-        {/* Divider */}
-        <div className="relative flex items-center justify-center mb-6">
-          <div className="border-t border-slate-800 w-full" />
-          <span className="bg-neutral-900 px-3 text-xs uppercase tracking-widest text-slate-500 font-semibold absolute">
-            or manual login
-          </span>
-        </div>
-
-        {/* Manual Email/Password Form */}
-        <form onSubmit={handleManualEmailAuth} className="space-y-4">
-          {isSignup && (
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input 
-                  type="text" 
-                  placeholder="e.g. Rohan" 
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-black/60 border border-slate-700/80 focus:border-slate-400 rounded-xl outline-none text-white text-sm transition-all placeholder-slate-600 focus:ring-1 focus:ring-slate-400"
-                />
+          {/* Top Brand & Ministry Line */}
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-center gap-3">
+              <HealthThreadLogo showText={false} className="w-11 h-11" />
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white leading-tight">
+                  HealthThread
+                </h2>
+                <p className="text-[10px] text-sky-200/80 font-medium tracking-wide">
+                  National Digital Health Records Mission
+                </p>
+                <p className="text-[9px] text-sky-300/60 font-normal">
+                  Ministry of Health & Family Welfare
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-              <input 
-                type="email" 
-                placeholder="rohan@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-black/60 border border-slate-700/80 focus:border-slate-400 rounded-xl outline-none text-white text-sm transition-all placeholder-slate-600 focus:ring-1 focus:ring-slate-400"
-              />
+          {/* Center Hero Heading & Subtitle */}
+          <div className="relative z-10 my-10 space-y-4">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.18]">
+              One health record.<br />Every hospital. For life.
+            </h1>
+            <p className="text-xs sm:text-sm text-sky-100/85 leading-relaxed max-w-sm">
+              Your complete medical history — vaccinations, prescriptions, surgeries, and lab reports — securely linked to your identity and shared only with your consent.
+            </p>
+          </div>
+
+          {/* Bottom 3 Mission Stats */}
+          <div className="relative z-10 pt-6 border-t border-sky-800/60 grid grid-cols-3 gap-2">
+            <div>
+              <p className="text-lg sm:text-xl font-black text-white tracking-tight">34 yrs</p>
+              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">of continuous records</p>
+            </div>
+            <div>
+              <p className="text-lg sm:text-xl font-black text-white tracking-tight">100%</p>
+              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">privacy protected</p>
+            </div>
+            <div>
+              <p className="text-lg sm:text-xl font-black text-white tracking-tight">eKYC</p>
+              <p className="text-[10px] text-sky-200/70 mt-0.5 leading-tight">verified identity</p>
             </div>
           </div>
 
+        </div>
+
+        {/* RIGHT PANE: LOGIN FORM (Image 4 Right) */}
+        <div className="bg-white p-7 sm:p-10 flex flex-col justify-between text-slate-800">
+          
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-black/60 border border-slate-700/80 focus:border-slate-400 rounded-xl outline-none text-white text-sm transition-all placeholder-slate-600 focus:ring-1 focus:ring-slate-400"
-              />
+            {/* Top Role Selector Tabs */}
+            <div className="flex border-b border-slate-200 mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setRole("patient");
+                  setFullName("Aradhya Tripathi");
+                  setIdentityNumber("4210 8842 7731");
+                }}
+                className={`flex-1 pb-3 text-xs sm:text-sm font-bold tracking-tight transition-all relative ${
+                  role === "patient"
+                    ? "text-slate-900"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                Patient Login
+                {role === "patient" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d95914] rounded-t-full" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRole("doctor");
+                  setFullName("Dr. Rajesh Sharma");
+                  setIdentityNumber("HP-99214-ABDM");
+                }}
+                className={`flex-1 pb-3 text-xs sm:text-sm font-bold tracking-tight transition-all relative ${
+                  role === "doctor"
+                    ? "text-slate-900"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                Doctor & Hospital Staff
+                {role === "doctor" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#d95914] rounded-t-full" />
+                )}
+              </button>
+            </div>
+
+            {/* Login Form */}
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              
+              {/* Full Name Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Aradhya Tripathi"
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all"
+                />
+              </div>
+
+              {/* Subtabs: eKYC Digital Identity vs Mobile OTP */}
+              <div className="flex border-b border-slate-200 pt-1 pb-1 gap-6">
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod("ekyc")}
+                  className={`text-xs font-semibold pb-1.5 transition-all relative ${
+                    authMethod === "ekyc"
+                      ? "text-[#d95914] font-bold"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  eKYC Digital Identity
+                  {authMethod === "ekyc" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#d95914]" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAuthMethod("otp")}
+                  className={`text-xs font-semibold pb-1.5 transition-all relative ${
+                    authMethod === "otp"
+                      ? "text-[#d95914] font-bold"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Mobile OTP
+                  {authMethod === "otp" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#d95914]" />
+                  )}
+                </button>
+              </div>
+
+              {/* Digital Identity Number / Phone Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                  {authMethod === "ekyc" ? "Digital Identity Number" : "Registered Mobile Number"}
+                </label>
+                <input
+                  type="text"
+                  value={authMethod === "ekyc" ? identityNumber : mobileNumber}
+                  onChange={(e) => authMethod === "ekyc" ? setIdentityNumber(e.target.value) : setMobileNumber(e.target.value)}
+                  placeholder={authMethod === "ekyc" ? "4210 8842 7731" : "+91 98765 43210"}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:border-[#d95914] focus:ring-1 focus:ring-[#d95914] text-xs sm:text-sm font-medium text-slate-900 outline-none transition-all tracking-wide"
+                />
+              </div>
+
+              {/* Instant Verification Banner (Image 4 green alert) */}
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-[11px] font-medium flex items-center gap-1.5">
+                <span>✓ OTP sent — for this demo, verification is instant.</span>
+              </div>
+
+              {/* Big Saffron Orange Button (Image 4: "Send OTP") */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-xl bg-[#d95914] hover:bg-[#c24e0f] text-white font-bold text-sm tracking-wide shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span>Send OTP</span>
+                )}
+              </button>
+            </form>
+
+            {/* Quick Demo Selectors (Image 4) */}
+            <div className="mt-5 space-y-2">
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-2.5 text-[11px] text-slate-400 font-medium absolute">
+                  or select a demo account
+                </span>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectDemo("patient")}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-left flex items-center gap-3 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">Patient Account</p>
+                    <p className="text-[10px] text-slate-500 truncate">Shashank Kumar · Health ID verified</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectDemo("doctor")}
+                  className="w-full p-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-left flex items-center gap-3 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <Stethoscope className="w-4 h-4" />
+                  </div>
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">Physician Account</p>
+                    <p className="text-[10px] text-slate-500 truncate">Dr. Rajesh Sharma · Apollo Hospitals</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Google Authentication Option (Preserved from VitalLens) */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full py-2 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                <span>Continue with Google / Firebase</span>
+              </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full mt-2 py-3.5 px-4 bg-slate-200 hover:bg-white text-black font-bold rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(226,232,240,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] flex items-center justify-center gap-2"
-          >
-            {isSignup ? "Create Account" : "Sign In with Credentials"}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
+          {/* Footer Disclaimer (Image 4 bottom) */}
+          <div className="pt-4 border-t border-slate-100 text-center">
+            <p className="text-[10px] text-slate-400 leading-relaxed">
+              By continuing, you agree that your data is encrypted and never shared without your explicit consent.
+            </p>
+          </div>
 
-        {/* Voice Agent Note */}
-        <div className="mt-6 p-3.5 bg-black/50 border border-slate-800 rounded-2xl flex items-start gap-3">
-          <Sparkles className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-400 leading-relaxed">
-            <strong className="text-slate-200">Voice Login Enabled:</strong> You can also simply speak into RoboDoc: <span className="text-slate-200 font-medium">"I am Rohan and password is XYZ"</span> to instantly log in!
-          </p>
         </div>
 
-        {/* Toggle Sign Up / Sign In */}
-        <div className="mt-6 text-center text-xs text-slate-400">
-          {isSignup ? (
-            <p>
-              Already have an account?{" "}
-              <button 
-                type="button" 
-                onClick={() => { setIsSignup(false); setError(""); }}
-                className="text-white font-semibold hover:underline ml-1"
-              >
-                Sign In
-              </button>
-            </p>
-          ) : (
-            <p>
-              Don't have an account yet?{" "}
-              <button 
-                type="button" 
-                onClick={() => { setIsSignup(true); setError(""); }}
-                className="text-white font-semibold hover:underline ml-1"
-              >
-                Sign Up
-              </button>
-            </p>
-          )}
-        </div>
+      </div>
 
-        <p className="mt-6 text-[11px] text-slate-600 text-center leading-relaxed">
-          RoboDoc is an AI clinical diagnostic assistant. By logging in, you agree to our standard terms and clinical safety protocols.
-        </p>
-      </motion.div>
     </main>
   );
 }
