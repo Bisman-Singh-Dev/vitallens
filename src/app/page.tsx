@@ -206,8 +206,8 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION - SLEEK, COMPACT, DEPTH-PACKED WITH INTERACTIVE DOTFIELD */}
-      <section className="relative overflow-hidden pt-12 pb-16 sm:pt-16 sm:pb-20 px-4 sm:px-8 border-b border-slate-200/70 bg-gradient-to-b from-[#f0f9ff]/70 via-white to-[#fafcfd]">
+      {/* 3. HERO SECTION - SEAMLESS CONTINUOUS FLOW, NEVER CUT OFF */}
+      <section className="relative overflow-hidden pt-8 pb-12 sm:pt-12 sm:pb-16 px-4 sm:px-8 bg-gradient-to-b from-[#f0f9ff]/70 via-[#fafcfd] to-white">
         
         {/* Interactive DotField Canvas Background */}
         <div className="absolute inset-0 pointer-events-auto opacity-75 z-0">
@@ -236,55 +236,44 @@ export default function LandingPage() {
         </div>
 
         {/* Soft Ambient Brand Color Blobs */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[720px] h-[440px] bg-gradient-to-tr from-[#00a896]/15 via-[#48cae4]/20 to-[#0077b6]/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[600px] h-[360px] bg-gradient-to-tr from-[#00a896]/15 via-[#48cae4]/20 to-[#0077b6]/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '6s' }} />
 
-        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-5 pointer-events-none">
+        <div className="max-w-5xl mx-auto text-center relative z-10 space-y-4 pointer-events-none">
           
           {/* Ecosystem Pill with glowing dot */}
-          <motion.div 
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div 
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-teal-200/80 shadow-xs text-xs font-semibold text-slate-700 hover:border-teal-400 transition-colors pointer-events-auto"
           >
             <span className="w-2 h-2 rounded-full bg-[#00a896] animate-ping" />
             <span className="text-[#00a896] font-bold">HealthThread Ecosystem</span>
             <span className="text-slate-300">·</span>
             <span className="text-slate-600 font-medium">Software, Product & AI Companion</span>
-          </motion.div>
+          </div>
 
-          {/* Hero Title (Crisp, cohesive, fits comfortably on standard viewports) */}
-          <motion.h1 
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-[1.12] max-w-4xl mx-auto"
+          {/* Hero Title (Clean, crisp, high contrast, zero overlap) */}
+          <h1 
+            className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] max-w-4xl mx-auto"
           >
             Your Health,{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00a896] via-[#00b4d8] to-[#0077b6]">
               Connected.
             </span>
-          </motion.h1>
+          </h1>
 
           {/* Subtitle */}
-          <motion.p 
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+          <p 
             className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal"
           >
             A seamless proactive loop. Your complete history secured in <strong>Vault</strong>, your home synced through <strong>Beacon</strong>, and diagnostic clarity through <strong>Lumi AI</strong> with natural voice.
-          </motion.p>
+          </p>
 
           {/* CTA Group with Voice Demo & Google Login */}
-          <motion.div 
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-wrap items-center justify-center gap-3 pt-2 pointer-events-auto"
+          <div 
+            className="flex flex-wrap items-center justify-center gap-3 pt-1 pointer-events-auto"
           >
             <button
               onClick={handleQuickGoogle}
-              className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300/90 text-slate-800 font-bold text-xs sm:text-sm tracking-wide shadow-sm hover:shadow transition-all flex items-center gap-2.5 active:scale-95"
+              className="px-5 py-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300/90 text-slate-800 font-bold text-xs sm:text-sm tracking-wide shadow-sm hover:shadow transition-all flex items-center gap-2.5 active:scale-95"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -297,7 +286,7 @@ export default function LandingPage() {
 
             <Link
               href="/login"
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00a896] via-[#00b4d8] to-[#0077b6] hover:opacity-95 text-white font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95"
+              className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#00a896] via-[#00b4d8] to-[#0077b6] hover:opacity-95 text-white font-bold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95"
             >
               <span>Open Your Vault Free</span>
               <ArrowRight className="w-4 h-4" />
@@ -306,7 +295,7 @@ export default function LandingPage() {
             {/* Interactive Deepgram Female Voice Trigger */}
             <button
               onClick={() => playLumiVoiceSample()}
-              className={`px-4 py-3 rounded-2xl border text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-sm ${
+              className={`px-4 py-2.5 rounded-2xl border text-xs sm:text-sm font-bold transition-all flex items-center gap-2 shadow-sm ${
                 isPlayingLumiSample 
                   ? "bg-teal-50 border-teal-400 text-[#00a896] animate-pulse"
                   : "bg-white hover:bg-slate-50 border-slate-300 text-slate-700"
@@ -325,7 +314,7 @@ export default function LandingPage() {
                 </>
               )}
             </button>
-          </motion.div>
+          </div>
 
           {/* Voice playing pill indicator */}
           <AnimatePresence>
@@ -334,7 +323,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-100/80 border border-teal-300 text-[11px] font-semibold text-teal-900"
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-100/80 border border-teal-300 text-[11px] font-semibold text-teal-900 pointer-events-auto"
               >
                 <span className="w-2 h-2 rounded-full bg-[#00a896] animate-ping" />
                 <span>Deepgram Asteria Voice: Speaking out loud</span>
@@ -343,14 +332,14 @@ export default function LandingPage() {
           </AnimatePresence>
 
           {/* Trust badges */}
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-[#00a896]" /> HIPAA & GDPR Standard</span>
             <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-[#00b4d8]" /> 256-Bit Zero-Knowledge</span>
             <span className="flex items-center gap-1.5"><Globe2 className="w-4 h-4 text-[#0077b6]" /> HL7 & FHIR Interoperable</span>
           </div>
 
           {/* Brand Palette Bar Preview */}
-          <div className="pt-2 flex items-center justify-center gap-2">
+          <div className="pt-1 flex items-center justify-center gap-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Brand Signature:</span>
             <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-slate-200/80 shadow-2xs">
               <span className="w-3.5 h-3.5 rounded-full bg-[#00a896]" title="Deep Teal (#00a896)" />
@@ -364,7 +353,7 @@ export default function LandingPage() {
       </section>
 
       {/* 4. THE 3 CORE PILLARS (VAULT, BEACON, LUMI) WITH CAROUSEL/GRID DEPTH */}
-      <section id="ecosystem" className="py-16 sm:py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+      <section id="ecosystem" className="py-12 sm:py-16 px-4 sm:px-8 max-w-7xl mx-auto w-full">
         
         <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-2">
           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#00a896] bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
